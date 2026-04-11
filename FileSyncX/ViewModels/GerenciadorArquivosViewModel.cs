@@ -121,13 +121,25 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    public async Task OrganizarPastasComIA()
+    public void OrganizarPastasComIA() // Você pode até renomear o comando para OrganizarPastasDesconhecidas se quiser
     {
-        // Chama a nova função baseada em Inteligência Artificial
         if (!string.IsNullOrWhiteSpace(PastaAtual))
         {
-            await MoverEOrganizarArquivos.OrganizarPastasDesconhecidasComIAAsync(PastaAtual);
-            Recarregar(); // Atualiza a interface para refletir as pastas movidas pela IA
+            MoverEOrganizarArquivos.OrganizarPastasDesconhecidasPorConteudo(PastaAtual);
+            Recarregar();
+        }
+    }
+    [RelayCommand]
+    public void ReCategorizarPastas()
+    {
+        // Verifica se há uma pasta carregada na tela
+        if (!string.IsNullOrWhiteSpace(PastaAtual))
+        {
+            // Chama a nova função de varredura e re-categorização
+            MoverEOrganizarArquivos.ReCategorizarPastasExistentes(PastaAtual);
+
+            // Atualiza a lista na interface (DataGrid/TreeView) para refletir as mudanças
+            Recarregar();
         }
     }
 

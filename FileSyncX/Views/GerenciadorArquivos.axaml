@@ -118,6 +118,15 @@
                                     </MenuItem>
 
 
+                                    <MenuItem Header="Re-Categorizar Pastas"
+                                        Command="{Binding ReCategorizarPastasCommand}">
+                                        <MenuItem.Icon>
+                                            <materialIcons:MaterialIcon Kind="FolderOpen" Width="18"
+                                                Height="18" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+
+
                                     <Separator />
 
 

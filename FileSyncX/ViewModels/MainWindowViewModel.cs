@@ -36,6 +36,6 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void MostrarConfiguracoes()
     {
-        // Placeholder para futuras implementações
+        TelaAtual = _services.GetRequiredService<Configuracoes>();
     }
 }

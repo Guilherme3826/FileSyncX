@@ -5,6 +5,12 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+
+    <NuGetAudit>false</NuGetAudit>
+    <NoWarn>$(NoWarn);NU1901;NU1902;NU1903;NU1904</NoWarn>
+
+
+
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +29,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1" />
+    <PackageReference Include="Google.GenAI" Version="1.6.1" />
     <PackageReference Include="Material.Icons.Avalonia" Version="3.0.1" />
 
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />

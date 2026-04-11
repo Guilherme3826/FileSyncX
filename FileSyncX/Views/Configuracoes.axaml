@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:FileSyncX.ViewModels"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+             x:Class="FileSyncX.Views.UserControls.Configuracoes"
+             x:DataType="vm:ConfiguracoesViewModel"
+             x:CompileBindings="False">
+
+    <Grid RowDefinitions="Auto, *" Background="{DynamicResource AppToolbarBg}">
+
+        <Border Grid.Row="0" Background="{DynamicResource AppPrimaryDark}" Padding="20,15">
+            <StackPanel Orientation="Horizontal" Spacing="15">
+                <Border Background="{DynamicResource AppWhite}" CornerRadius="4" Width="40" Height="40" Padding="2">
+                    <materialIcons:MaterialIcon Kind="Cog" Width="24" Height="24" Foreground="{DynamicResource AppPrimaryDark}" />
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Configurações de Extensões" Foreground="{DynamicResource AppWhite}" FontWeight="Bold" FontSize="16" />
+                    <TextBlock Text="Gerencie o mapeamento de arquivos e categorias do sistema" Foreground="{DynamicResource AppWhite}" Opacity="0.8" FontSize="12" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Margin="20" Background="{DynamicResource AppSurface}" CornerRadius="4" BoxShadow="0 2 10 0 #30000000">
+            <Grid RowDefinitions="Auto, Auto, Auto, Auto, Auto, *" Margin="30">
+
+                <StackPanel Grid.Row="0" Margin="0,0,0,15" MaxWidth="600" HorizontalAlignment="Left">
+                    <TextBlock Text="Pasta Raiz de Organização (Destino dos Arquivos):" FontWeight="Bold" Margin="0,0,0,5" Foreground="{DynamicResource AppTextPrimary}"/>
+                    <TextBox Text="{Binding PastaRaiz, Mode=TwoWay}" PlaceholderText="Ex: C:\MeusArquivos\Organizados" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Margin="0,0,0,15" MaxWidth="600" HorizontalAlignment="Left">
+                    <TextBlock Text="Categoria:" FontWeight="Bold" Margin="0,0,0,5" Foreground="{DynamicResource AppTextPrimary}"/>
+                    <AutoCompleteBox ItemsSource="{Binding Categorias}" 
+                                     Text="{Binding CategoriaSelecionada, Mode=TwoWay}" 
+                                     HorizontalAlignment="Stretch" 
+                                     PlaceholderText="Selecione ou digite uma nova categoria..." />
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Margin="0,0,0,15" MaxWidth="600" HorizontalAlignment="Left">
+                    <TextBlock Text="Extensão (Sem Ponto):" FontWeight="Bold" Margin="0,0,0,5" Foreground="{DynamicResource AppTextPrimary}"/>
+                    <TextBox Text="{Binding Extensao, Mode=TwoWay}" PlaceholderText="Ex: shp" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="3" Margin="0,0,0,25" MaxWidth="600" HorizontalAlignment="Left">
+                    <TextBlock Text="Descrição da Extensão:" FontWeight="Bold" Margin="0,0,0,5" Foreground="{DynamicResource AppTextPrimary}"/>
+                    <TextBox Text="{Binding DescricaoExtensao, Mode=TwoWay}" PlaceholderText="Ex: Arquivo Shapefile Principal" />
+                </StackPanel>
+
+                <Button Grid.Row="4" Command="{Binding SalvarExtensaoCommand}" 
+                        HorizontalAlignment="Left" Classes="ActionBtn" Padding="20,10" Margin="0,0,0,25">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <materialIcons:MaterialIcon Kind="ContentSave" Width="18" Height="18" Foreground="{DynamicResource AppWhite}" />
+                        <TextBlock Text="Salvar e Atualizar JSON" Foreground="{DynamicResource AppWhite}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <Border Grid.Row="5" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" CornerRadius="4" Padding="10">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <TreeView ItemsSource="{Binding RootNodes}" 
+                                  SelectedItem="{Binding NodeSelecionado, Mode=TwoWay}" 
+                                  Background="Transparent"
+                                  Padding="10">
+                            <TreeView.ItemTemplate>
+                                <TreeDataTemplate ItemsSource="{Binding Children}">
+                                    <StackPanel Orientation="Horizontal" Spacing="10" Height="30">
+                                        <TextBlock Text="{Binding Chave}" FontWeight="Bold" Foreground="{DynamicResource AppTextPrimary}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Descricao}" Foreground="{DynamicResource AppTextSecondary}" VerticalAlignment="Center" FontSize="12" />
+                                    </StackPanel>
+                                </TreeDataTemplate>
+                            </TreeView.ItemTemplate>
+                        </TreeView>
+                    </ScrollViewer>
+                </Border>
+
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

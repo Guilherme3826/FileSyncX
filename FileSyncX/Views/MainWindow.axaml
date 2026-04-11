@@ -1,0 +1,109 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:FileSyncX.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
+        x:Class="FileSyncX.Views.MainWindow"
+        xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+        x:DataType="vm:MainWindowViewModel"
+        x:CompileBindings="False" 
+        Icon="/Assets/avalonia-logo.ico"
+        Title="FileSyncX"
+        WindowDecorations="BorderOnly"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="40"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
+        WindowStartupLocation="CenterScreen">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Window.Styles>
+        <Style Selector="Button.SidebarButton">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="20,12"/>
+        </Style>
+    </Window.Styles>
+
+    <Border Margin="10"
+            Background="{DynamicResource AppGrayBg}"
+            BorderBrush="{DynamicResource AppPrimaryDark}"
+            BorderThickness="1"
+            BoxShadow="0 4 20 0 #60000000">
+
+        <Grid RowDefinitions="40, *" ColumnDefinitions="Auto, *">
+
+            <Border Grid.Row="0" Grid.ColumnSpan="2" Background="{DynamicResource AppPrimaryDark}" ZIndex="10">
+                <Grid ColumnDefinitions="Auto, *, Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="15,0">
+                        <materialIcons:MaterialIcon Kind="FolderSync" Width="20" Height="20" Foreground="{DynamicResource AppWhite}"/>
+                        <TextBlock Text="FileSyncX" Foreground="{DynamicResource AppWhite}" FontWeight="Bold" Margin="10,0" VerticalAlignment="Center" FontSize="12"/>
+                    </StackPanel>
+
+                    <Rectangle Grid.Column="1" Name="DragArea" Fill="Transparent" PointerPressed="DragArea_PointerPressed" />
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <Button Classes="WindowControl" Name="btnMinimize" Content="&#xE921;" Click="Minimize_Click"/>
+                        <Button Classes="WindowControl" Name="btnMaximize" Content="&#xE922;" Click="MaxRestore_Click"/>
+                        <Button Classes="WindowControl Close" Name="btnClose" Content="&#xE8BB;" Click="Close_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="0" Name="Sidebar" Background="{DynamicResource AppToolbarBg}" BorderBrush="{DynamicResource AppBorder}" BorderThickness="0,0,1,0" Width="260">
+                <Border.Transitions>
+                    <Transitions>
+                        <DoubleTransition Property="Width" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+                    </Transitions>
+                </Border.Transitions>
+                
+                <Grid RowDefinitions="Auto, *">
+                    <StackPanel Grid.Row="0" Margin="15,20,15,30">
+                        <Button Background="Transparent" BorderThickness="0" HorizontalAlignment="Left" Margin="5,0,0,10" Click="ToggleSidebar_Click">
+                            <materialIcons:MaterialIcon Kind="Menu" Width="24" Height="24" Foreground="{DynamicResource AppPrimary}"/>
+                        </Button>
+                        <StackPanel Name="SidebarHeader" Margin="10,0,0,0">
+                            <TextBlock Text="FileSyncX" FontWeight="ExtraBold" FontSize="22" Foreground="{DynamicResource AppPrimary}"/>
+                            <TextBlock Text="GERENCIADOR" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AppTextSecondary}" LetterSpacing="1"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel Spacing="2">
+                            <Button Classes="SidebarButton" Command="{Binding MostrarDashboardCommand}" Click="AtribuirSombra">
+                                <StackPanel Orientation="Horizontal" Spacing="15">
+                                    <materialIcons:MaterialIcon Kind="ViewDashboardOutline" Width="20" Height="20"/>
+                                    <TextBlock Name="TxtDashboard" Text="Dashboard" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Classes="SidebarButton" Command="{Binding MostrarSincronizacaoCommand}" Click="AtribuirSombra">
+                                <StackPanel Orientation="Horizontal" Spacing="15">
+                                    <materialIcons:MaterialIcon Kind="Sync" Width="20" Height="20"/>
+                                    <TextBlock Name="TxtSync" Text="Sincronização" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Separator Name="SepConfig" Margin="20,10" Background="{DynamicResource AppBorder}"/>
+
+                            <Button Classes="SidebarButton" Command="{Binding MostrarConfiguracoesCommand}" Click="AtribuirSombra">
+                                <StackPanel Orientation="Horizontal" Spacing="15">
+                                    <materialIcons:MaterialIcon Kind="SettingsOutline" Width="20" Height="20"/>
+                                    <TextBlock Name="TxtConfig" Text="Configurações" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource AppGrayBg}">
+                <ContentControl x:Name="TelaPrincipal" Content="{Binding TelaAtual}"/>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,186 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+    xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    xmlns:vm="using:FileSyncX.ViewModels"
+    x:Class="FileSyncX.Views.UserControls.GerenciadorArquivos"
+    x:DataType="vm:GerenciadorArquivosViewModel"
+    x:CompileBindings="False"
+    DragDrop.AllowDrop="True">
+
+    <Grid RowDefinitions="Auto, *" Background="{DynamicResource AppToolbarBg}">
+
+        <Border Grid.Row="0" Background="{DynamicResource AppPrimaryDark}" Padding="20,15">
+            <StackPanel Orientation="Horizontal" Spacing="15">
+                <Border Background="{DynamicResource AppWhite}" CornerRadius="4" Width="40"
+                    Height="40" Padding="2">
+                    <materialIcons:MaterialIcon Kind="FolderSync" Width="24" Height="24"
+                        Foreground="{DynamicResource AppPrimaryDark}" />
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Gerenciador de Arquivos"
+                        Foreground="{DynamicResource AppWhite}" FontWeight="Bold" FontSize="16" />
+                    <TextBlock Text="Sincronização e verificação de diretórios locais"
+                        Foreground="{DynamicResource AppWhite}" Opacity="0.8" FontSize="12" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Margin="20" Background="{DynamicResource AppSurface}" CornerRadius="4"
+            BoxShadow="0 2 10 0 #30000000">
+            <Grid RowDefinitions="Auto, Auto, Auto, *, Auto">
+
+                <Border Grid.Row="0" Margin="20,20,20,0"
+                    Background="{DynamicResource AppPrimaryLight}"
+                    BorderBrush="{DynamicResource AppPrimary}"
+                    BorderThickness="2"
+                    CornerRadius="6"
+                    Padding="30">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                        <materialIcons:MaterialIcon Kind="CloudUploadOutline" Width="48" Height="48"
+                            Foreground="{DynamicResource AppPrimary}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Arraste e solte uma pasta aqui para iniciar a verificação"
+                            Foreground="{DynamicResource AppPrimaryDark}"
+                            FontWeight="SemiBold"
+                            FontSize="16"
+                            HorizontalAlignment="Center" />
+                        <TextBlock Text="Ou utilize o botão 'Selecionar Pasta' abaixo"
+                            Foreground="{DynamicResource AppTextSecondary}"
+                            FontSize="12"
+                            HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto" Margin="20,20,20,10">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5">
+                        <Button Classes="ActionBtn" Command="{Binding SelecionarPastaCommand}"
+                            Margin="0,0,15,0">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Kind="FolderSearchOutline" Width="18"
+                                    Height="18" Foreground="{DynamicResource AppWhite}" />
+                                <TextBlock Text="Selecionar Pasta"
+                                    Foreground="{DynamicResource AppWhite}"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Classes="ToolBtn" ToolTip.Tip="Sincronizar"
+                            Command="{Binding SincronizarCommand}">
+                            <materialIcons:MaterialIcon Kind="Sync" Width="20" Height="20"
+                                Foreground="{DynamicResource AppTextSecondary}" />
+                        </Button>
+
+                        <Button Classes="ToolBtn" ToolTip.Tip="Remover Selecionados">
+                            <materialIcons:MaterialIcon Kind="DeleteOutline" Width="20" Height="20"
+                                Foreground="{DynamicResource AppError}" />
+                        </Button>
+
+                        <Border Width="1" Height="20" Background="{DynamicResource AppBorder}"
+                            Margin="10,0" />
+
+                        <Button Classes="ToolBtn" ToolTip.Tip="Recarregar"
+                            Command="{Binding RecarregarCommand}">
+                            <materialIcons:MaterialIcon Kind="Reload" Width="20" Height="20"
+                                Foreground="{DynamicResource AppPrimary}" />
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                        <Grid Width="250">
+                            <TextBox Classes="SearchBox"
+                                PlaceholderText="Pesquisar arquivo ou extensão..."
+                                Text="{Binding TermoPesquisa, Mode=TwoWay}"
+                                VerticalContentAlignment="Center" />
+                            <materialIcons:MaterialIcon Kind="Magnify" Width="20"
+                                HorizontalAlignment="Right" Margin="0,0,8,0"
+                                Foreground="{DynamicResource AppTextSecondary}" />
+                        </Grid>
+
+                        <Button Classes="ToolBtn" ToolTip.Tip="Exportar Relatório"
+                            Command="{Binding ExportarRelatorioCommand}">
+                            <materialIcons:MaterialIcon Kind="Export" Width="22" Height="22"
+                                Foreground="{DynamicResource AppTextPrimary}" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <Border Grid.Row="2" Height="1" Background="{DynamicResource AppBorder}"
+                    Margin="0,5,0,0" />
+
+                <DataGrid Grid.Row="3"
+                    x:CompileBindings="False"
+                    ItemsSource="{Binding ListaArquivos}"
+                    SelectedItem="{Binding ArquivoSelecionado, Mode=TwoWay}"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    CanUserSortColumns="True"
+                    CanUserResizeColumns="True"
+                    GridLinesVisibility="Horizontal"
+                    BorderThickness="0"
+                    Background="Transparent"
+                    RowBackground="Transparent"
+                    Margin="0,0,0,5">
+
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="" Width="50">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <materialIcons:MaterialIcon Kind="FileOutline" Width="20"
+                                        Height="20" Foreground="{DynamicResource AppTextSecondary}"
+                                        Margin="10,0" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="NOME DO ARQUIVO"
+                            Binding="{Binding Nome}"
+                            Width="300"
+                            FontWeight="SemiBold"
+                            Foreground="{DynamicResource AppTextPrimary}" />
+
+                        <DataGridTextColumn Header="TIPO"
+                            Binding="{Binding Extensao}"
+                            Width="100"
+                            Foreground="{DynamicResource AppTextSecondary}" />
+
+                        <DataGridTextColumn Header="TAMANHO"
+                            Binding="{Binding TamanhoFormatado}"
+                            Width="120"
+                            Foreground="{DynamicResource AppTextPrimary}" />
+
+                        <DataGridTextColumn Header="MODIFICADO EM"
+                            Binding="{Binding DataModificacao, StringFormat=\{0:dd/MM/yyyy HH:mm\}}"
+                            Width="180"
+                            Foreground="{DynamicResource AppTextPrimary}" />
+
+                        <DataGridTextColumn Header="STATUS"
+                            Binding="{Binding StatusSincronizacao}"
+                            Width="150"
+                            Foreground="{DynamicResource AppPrimary}"
+                            FontWeight="Bold" />
+
+                        <DataGridTextColumn Header="CAMINHO LOCAL"
+                            Binding="{Binding CaminhoCompleto}"
+                            Width="*"
+                            Foreground="{DynamicResource AppTextSecondary}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <Border Grid.Row="4" Background="{DynamicResource AppPrimaryDark}" Height="35"
+                    CornerRadius="0,0,4,4" Padding="15,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                        VerticalAlignment="Center" Spacing="10">
+                        <TextBlock Text="TOTAL DE ARQUIVOS:" Foreground="{DynamicResource AppWhite}"
+                            Opacity="0.8" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding TotalArquivos}"
+                            Foreground="{DynamicResource AppWhite}" FontSize="14" FontWeight="Bold"
+                            VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

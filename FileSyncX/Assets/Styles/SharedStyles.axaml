@@ -1,0 +1,248 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia">
+
+	<Style Selector="TextBlock.PageTitle">
+		<Setter Property="FontSize" Value="26" />
+		<Setter Property="FontWeight" Value="Bold" />
+		<Setter Property="VerticalAlignment" Value="Center" />
+	</Style>
+
+	<Style Selector="materialIcons|MaterialIcon.TitleIcon">
+		<Setter Property="Width" Value="32" />
+		<Setter Property="Height" Value="32" />
+		<Setter Property="Foreground" Value="{DynamicResource AppPrimary}" />
+	</Style>
+
+	<Style Selector="Border.ToolbarContainer">
+		<Setter Property="Background" Value="{DynamicResource AppToolbarBg}" />
+		<Setter Property="CornerRadius" Value="8" />
+		<Setter Property="Padding" Value="15" />
+		<Setter Property="Margin" Value="0,0,0,15" />
+	</Style>
+
+	<Style Selector="Button.ActionBtn">
+		<Setter Property="Background" Value="{DynamicResource AppPrimary}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppWhite}" />
+		<Setter Property="Padding" Value="12,6" />
+		<Setter Property="CornerRadius" Value="4" />
+		<Setter Property="FontWeight" Value="SemiBold" />
+	</Style>
+
+	<Style Selector="Button.ToolBtn">
+		<Setter Property="Width" Value="40" />
+		<Setter Property="Height" Value="36" />
+		<Setter Property="Background" Value="{DynamicResource AppSurface}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+		<Setter Property="BorderThickness" Value="1" />
+		<Setter Property="CornerRadius" Value="4" />
+		<Setter Property="Padding" Value="8" />
+		<Setter Property="Margin" Value="0,0,5,0" />
+	</Style>
+
+	<Style Selector="Button.ToolBtn:pointerover /template/ ContentPresenter">
+		<Setter Property="BorderBrush" Value="{DynamicResource AppPrimary}" />
+		<Setter Property="Background" Value="{DynamicResource AppPrimaryLight}" />
+	</Style>
+
+	<Style Selector="Button.ExportBtn">
+		<Setter Property="Width" Value="40" />
+		<Setter Property="Height" Value="36" />
+		<Setter Property="Background" Value="{DynamicResource AppPrimary}" />
+		<Setter Property="BorderThickness" Value="0" />
+		<Setter Property="CornerRadius" Value="4" />
+	</Style>
+
+	<Style Selector="TextBox.SearchBox">
+		<Setter Property="VerticalContentAlignment" Value="Center" />
+		<Setter Property="Padding" Value="10,0,40,0" />
+		<Setter Property="CornerRadius" Value="4" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AppInputBorder}" />
+	</Style>
+
+	<Style Selector="DataGrid.MainGrid">
+		<Setter Property="GridLinesVisibility" Value="All" />
+		<Setter Property="BorderThickness" Value="1" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+		<Setter Property="Background" Value="{DynamicResource AppSurface}" />
+		<Setter Property="HeadersVisibility" Value="Column" />
+		<Setter Property="RowBackground" Value="{DynamicResource AppSurface}" />
+	</Style>
+
+	<Style Selector="DataGridColumnHeader">
+		<Setter Property="Background" Value="{DynamicResource AppToolbarBg}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppTextSecondary}" />
+		<Setter Property="FontWeight" Value="SemiBold" />
+		<Setter Property="Padding" Value="10,8" />
+	</Style>
+
+	<Style Selector="DataGridCell">
+		<Setter Property="VerticalAlignment" Value="Center" />
+		<Setter Property="Padding" Value="10,5" />
+	</Style>
+
+	<Style Selector="AutoCompleteBox">
+		<Setter Property="Background" Value="{DynamicResource AppToolbarBg}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+		<Setter Property="CornerRadius" Value="4" />
+	</Style>
+
+	<Style Selector="DatePicker">
+		<Setter Property="Background" Value="{DynamicResource AppToolbarBg}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+		<Setter Property="BorderThickness" Value="1" />
+		<Setter Property="CornerRadius" Value="4" />
+	</Style>
+
+	<Style Selector="DatePickerPresenter Button">
+		<Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}" />
+	</Style>
+
+	<Style Selector="AutoCompleteBox /template/ TextBox">
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="BorderThickness" Value="0" />
+	</Style>
+
+	<Style Selector="AutoCompleteBox /template/ ListBox">
+		<Setter Property="Background" Value="{DynamicResource AppSurface}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+		<Setter Property="BorderThickness" Value="1" />
+	</Style>
+
+	<Style Selector="TextBlock">
+		<Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}" />
+	</Style>
+
+	<Style Selector="Label">
+		<Setter Property="Foreground" Value="{DynamicResource AppTextSecondary}" />
+	</Style>
+
+	<Style Selector="TextBox">
+		<Setter Property="Background" Value="{DynamicResource AppToolbarBg}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+		<Setter Property="CaretBrush" Value="{DynamicResource AppTextPrimary}" />
+	</Style>
+
+	<Style Selector="ComboBox">
+		<Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}" />
+		<Setter Property="Background" Value="{DynamicResource AppToolbarBg}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AppBorder}" />
+		<Setter Property="BorderThickness" Value="1" />
+		<Setter Property="CornerRadius" Value="4" />
+		<Setter Property="Padding" Value="8,4" />
+	</Style>
+
+	<Style Selector="DataGridCell TextBlock">
+		<Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}" />
+	</Style>
+
+	<Style Selector="Button.SidebarButton">
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="Foreground" Value="{DynamicResource AppTextSecondary}" />
+		<Setter Property="HorizontalAlignment" Value="Stretch" />
+		<Setter Property="Padding" Value="15,10" />
+		<Setter Property="CornerRadius" Value="4" />
+		<Setter Property="BorderThickness" Value="0" />
+	</Style>
+
+	<Style Selector="Button.SidebarButton materialIcons|MaterialIcon">
+		<Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+	</Style>
+
+	<Style Selector="Button.SidebarButton TextBlock">
+		<Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+	</Style>
+
+	<Style Selector="Button.SidebarButton.selected /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource AppSelectionBg}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppPrimary}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AppPrimary}" />
+		<Setter Property="BorderThickness" Value="4,0,0,0" />
+	</Style>
+
+	<Style Selector="Button.SidebarButton.selected TextBlock">
+		<Setter Property="FontWeight" Value="Bold" />
+	</Style>
+
+	<Style Selector="Button.SidebarButton:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource AppSelectionBg}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppWhite}" />
+	</Style>
+
+	<Style Selector="Button.AccentBtn">
+		<Setter Property="Background" Value="{DynamicResource AppPrimary}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppWhite}" />
+		<Setter Property="CornerRadius" Value="4" />
+		<Setter Property="Padding" Value="15,8" />
+	</Style>
+
+	<Style Selector="Button.ToolBtn:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource AppHoverBorder}" />
+	</Style>
+
+	<Style Selector="DataGridColumnHeader TextBlock">
+		<Setter Property="Foreground" Value="{DynamicResource AppTextPrimary}" />
+		<Setter Property="FontWeight" Value="SemiBold" />
+		<Setter Property="VerticalAlignment" Value="Center" />
+	</Style>
+
+	<Style Selector="DataGridColumnHeader /template/ Grid#PART_ColumnHeaderRoot">
+		<Setter Property="Background" Value="{DynamicResource AppToolbarBg}" />
+	</Style>
+
+	<Style Selector="DataGridColumnHeader /template/ ContentPresenter">
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="BorderBrush" Value="Transparent" />
+		<Setter Property="BorderThickness" Value="0,0,0,0" />
+	</Style>
+
+	<Style Selector="DataGridColumnHeader:pointerover /template/ Grid#PART_ColumnHeaderRoot">
+		<Setter Property="Background" Value="{DynamicResource AppHoverBorder}" />
+	</Style>
+
+	<Style Selector="DataGridRow">
+		<Setter Property="Background" Value="Transparent" />
+	</Style>
+
+	<Style Selector="DataGridRow:selected /template/ Rectangle#BackgroundRectangle">
+		<Setter Property="Fill" Value="{DynamicResource AppPrimary}" />
+		<Setter Property="Opacity" Value="0.2" />
+	</Style>
+
+	<Style Selector="Button.WindowControl">
+		<Setter Property="Width" Value="46" />
+		<Setter Property="Height" Value="32" />
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="Foreground" Value="{DynamicResource AppWhite}" />
+		<Setter Property="CornerRadius" Value="0" />
+		<Setter Property="Padding" Value="0" />
+		<Setter Property="FontSize" Value="10" />
+		<Setter Property="FontFamily" Value="Segoe MDL2 Assets, internal:Segoe MDL2 Assets" />
+		<Setter Property="HorizontalContentAlignment" Value="Center" />
+		<Setter Property="VerticalContentAlignment" Value="Center" />
+	</Style>
+
+	<Style Selector="Button.WindowControl:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource AppSelectionBg}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppWhite}" />
+	</Style>
+
+	<Style Selector="Button.WindowControl.Close:pointerover /template/ ContentPresenter">
+		<Setter Property="Background" Value="{DynamicResource AppError}" />
+		<Setter Property="Foreground" Value="{DynamicResource AppWhite}" />
+	</Style>
+
+	<Style Selector="ComboBox:pointerover /template/ Border#Background">
+		<Setter Property="Background" Value="{DynamicResource AppHoverBorder}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource AppPrimary}" />
+	</Style>
+
+	<Style Selector="ComboBox /template/ Path#DropDownGlyph">
+		<Setter Property="Fill" Value="{DynamicResource AppTextSecondary}" />
+	</Style>
+
+</Styles>

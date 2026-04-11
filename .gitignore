@@ -1,0 +1,21 @@
+# Lixo de compilação
+[Bb]in/
+[Ww]in32/
+[Xx]64/
+[Oo]bj/
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Avalonia & User Specific
+.avalonia/
+*.suo
+*.user
+*.sln.docstates
+
+# NuGet
+packages/
+*.nuget.props
+*.nuget.targets
+project.assets.json

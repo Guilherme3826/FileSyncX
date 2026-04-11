@@ -1,0 +1,39 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<SolidColorBrush x:Key="AppPrimaryDark">#007D53</SolidColorBrush>
+	<SolidColorBrush x:Key="AppPrimary">#00A870</SolidColorBrush>
+	<SolidColorBrush x:Key="AppPrimaryLight">#1A2F26</SolidColorBrush>
+
+	<SolidColorBrush x:Key="AppGrayBg">#121212</SolidColorBrush>
+	<SolidColorBrush x:Key="AppSurface">#1E1E1E</SolidColorBrush>
+	<SolidColorBrush x:Key="AppToolbarBg">#2D2D2D</SolidColorBrush>
+	<SolidColorBrush x:Key="AppBorder">#3E3E42</SolidColorBrush>
+	<SolidColorBrush x:Key="AppHoverBorder">#505055</SolidColorBrush>
+	<SolidColorBrush x:Key="AppInputBorder">#3E3E42</SolidColorBrush>
+
+	<SolidColorBrush x:Key="AppTextPrimary">#FFFFFF</SolidColorBrush>
+	<SolidColorBrush x:Key="AppTextSecondary">#AAAAAA</SolidColorBrush>
+	<SolidColorBrush x:Key="AppWhite">#FFFFFF</SolidColorBrush>
+
+	<SolidColorBrush x:Key="AppSelectionBg">#353540</SolidColorBrush>
+	<SolidColorBrush x:Key="AppError">#FF6B6B</SolidColorBrush>
+
+	<SolidColorBrush x:Key="ComboBoxDropDownBackground">#1E1E1E</SolidColorBrush>
+	<SolidColorBrush x:Key="ComboBoxDropDownBorderBrush">#3E3E42</SolidColorBrush>
+	<SolidColorBrush x:Key="ComboBoxItemForeground">#FFFFFF</SolidColorBrush>
+	<SolidColorBrush x:Key="ComboBoxItemForegroundPointerOver">#FFFFFF</SolidColorBrush>
+	<SolidColorBrush x:Key="ComboBoxItemForegroundSelected">#FFFFFF</SolidColorBrush>
+	<SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver">#353540</SolidColorBrush>
+	<SolidColorBrush x:Key="ComboBoxItemBackgroundSelected">#00A870</SolidColorBrush>
+
+	<SolidColorBrush x:Key="DatePickerFlyoutPresenterBackground">#1E1E1E</SolidColorBrush>
+	<SolidColorBrush x:Key="DatePickerFlyoutPresenterBorderBrush">#3E3E42</SolidColorBrush>
+	<SolidColorBrush x:Key="DatePickerPresenterForeground">#FFFFFF</SolidColorBrush>
+	<SolidColorBrush x:Key="DatePickerPresenterUnfocusedForeground">#AAAAAA</SolidColorBrush>
+	<SolidColorBrush x:Key="DatePickerButtonBackgroundSelected">#00A870</SolidColorBrush>
+	<SolidColorBrush x:Key="DatePickerButtonForegroundSelected">#FFFFFF</SolidColorBrush>
+
+	<SolidColorBrush x:Key="TextControlPlaceholderForeground">#888888</SolidColorBrush>
+
+</ResourceDictionary>

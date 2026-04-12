@@ -1,10 +1,18 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using UglyToad.PdfPig;
+using Tesseract;
 using FileSyncX.Funcoes.GerenciadorArquivos;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Threading.Tasks; // Necessário para Task
+using System.Text;
+using System.Collections.Generic;
+using System.Linq;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Avalonia.Threading; // Necessário para atualizar a UI a partir da Task
 
 namespace FileSyncX.ViewModels;
 
@@ -22,16 +30,79 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [ObservableProperty]
     private ArquivoModel? _arquivoSelecionado;
 
-    // Propriedade vital para guardar a raiz de onde os arquivos vieram
     [ObservableProperty]
     private string _pastaAtual = string.Empty;
+
+    // Função que será enviada para a classe estática para atualizar a linha do arquivo em tempo real
+    private void ReportarProgresso(string caminhoCompleto, bool processando, string statusMsg)
+    {
+        var arquivo = ListaArquivos.FirstOrDefault(a => a.CaminhoCompleto == caminhoCompleto);
+        if (arquivo != null)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                arquivo.IsProcessing = processando;
+                if (!string.IsNullOrWhiteSpace(statusMsg))
+                    arquivo.StatusSincronizacao = statusMsg;
+
+                if (!processando)
+                {
+                    // Quando terminar, define o ícone como concluído
+                    arquivo.IconKind = "CheckCircle";
+                }
+            });
+        }
+    }
+
+    [RelayCommand]
+    public async Task ConverterImagensParaPdfAsync()
+    {
+        if (string.IsNullOrWhiteSpace(PastaAtual)) return;
+
+        await Task.Run(() =>
+        {
+            MoverEOrganizarArquivos.ConverterImagensParaPdfComOcr(PastaAtual);
+        });
+
+        Recarregar();
+    }
+
+
+    [RelayCommand]
+    public async Task OrganizarPorOcrAsync()
+    {
+        if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual)) return;
+
+        // Roda em segundo plano para não travar a interface
+        await Task.Run(() =>
+        {
+            // Passamos a função ReportarProgresso para controlar a UI (animação de loading e status)
+            MoverEOrganizarArquivos.OrganizarPdfsPorSimilaridadeOcr(PastaAtual, ReportarProgresso);
+        });
+
+        Recarregar();
+    }
+
+    [RelayCommand]
+    public async Task OrganizarPorLayoutVisualAsync()
+    {
+        if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual)) return;
+
+        await Task.Run(() =>
+        {
+            // Enviamos o callback de progresso para a função
+            MoverEOrganizarArquivos.OrganizarPdfsPorLayoutVisual(PastaAtual, ReportarProgresso);
+        });
+
+        Recarregar();
+    }
 
     public void LerArquivosDaPasta(string caminhoPasta)
     {
         if (string.IsNullOrWhiteSpace(caminhoPasta) || !Directory.Exists(caminhoPasta))
             return;
 
-        PastaAtual = caminhoPasta; // Salva o estado da pasta em uso
+        PastaAtual = caminhoPasta;
         ListaArquivos.Clear();
 
         var diretorio = new DirectoryInfo(caminhoPasta);
@@ -47,7 +118,8 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
                 DataModificacao = pasta.LastWriteTime,
                 StatusSincronizacao = "Aguardando",
                 CaminhoCompleto = pasta.FullName,
-                IconKind = "Folder"
+                IconKind = "Folder",
+                IsProcessing = false
             });
         }
 
@@ -62,7 +134,8 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
                 DataModificacao = arquivo.LastWriteTime,
                 StatusSincronizacao = "Aguardando",
                 CaminhoCompleto = arquivo.FullName,
-                IconKind = ObterIconePorExtensao(arquivo.Extension)
+                IconKind = ObterIconePorExtensao(arquivo.Extension),
+                IsProcessing = false
             });
         }
 
@@ -105,23 +178,21 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [RelayCommand]
     public void Sincronizar()
     {
-        // Intercepta e dispara a organização dos arquivos
         MoverEOrganizarArquivos.Executar(PastaAtual, ListaArquivos);
     }
 
     [RelayCommand]
     public void OrganizarPastas()
     {
-        // Chama a função para agrupar as pastas por categoria com base no JSON
         if (!string.IsNullOrWhiteSpace(PastaAtual))
         {
             MoverEOrganizarArquivos.OrganizarPastasPorCategoria(PastaAtual);
-            Recarregar(); // Atualiza a tela imediatamente após mover as pastas
+            Recarregar();
         }
     }
 
     [RelayCommand]
-    public void OrganizarPastasComIA() // Você pode até renomear o comando para OrganizarPastasDesconhecidas se quiser
+    public void OrganizarPastasComIA()
     {
         if (!string.IsNullOrWhiteSpace(PastaAtual))
         {
@@ -129,16 +200,33 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
             Recarregar();
         }
     }
+
     [RelayCommand]
     public void ReCategorizarPastas()
     {
-        // Verifica se há uma pasta carregada na tela
         if (!string.IsNullOrWhiteSpace(PastaAtual))
         {
-            // Chama a nova função de varredura e re-categorização
             MoverEOrganizarArquivos.ReCategorizarPastasExistentes(PastaAtual);
+            Recarregar();
+        }
+    }
 
-            // Atualiza a lista na interface (DataGrid/TreeView) para refletir as mudanças
+    [RelayCommand]
+    public void OrganizarPorPalavraChave()
+    {
+        if (!string.IsNullOrWhiteSpace(PastaAtual))
+        {
+            MoverEOrganizarArquivos.OrganizarPastasPorPalavraChave(PastaAtual);
+            Recarregar();
+        }
+    }
+
+    [RelayCommand]
+    public void OrganizarPorAnoMes()
+    {
+        if (!string.IsNullOrWhiteSpace(PastaAtual))
+        {
+            MoverEOrganizarArquivos.OrganizarPastasPorAnoMes(PastaAtual);
             Recarregar();
         }
     }
@@ -146,7 +234,6 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [RelayCommand]
     private void Recarregar()
     {
-        // Lê os arquivos novamente com base na pasta que já está carregada
         if (!string.IsNullOrWhiteSpace(PastaAtual))
         {
             LerArquivosDaPasta(PastaAtual);
@@ -179,4 +266,8 @@ public partial class ArquivoModel : ObservableObject
 
     [ObservableProperty]
     private string _iconKind = "FileOutline";
+
+    // Nova propriedade para controlar a animação na UI
+    [ObservableProperty]
+    private bool _isProcessing = false;
 }

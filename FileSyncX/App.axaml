@@ -4,6 +4,7 @@
     xmlns:local="using:FileSyncX"
     xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
     RequestedThemeVariant="Default">
+    
     <Application.DataTemplates>
         <local:ViewLocator />
     </Application.DataTemplates>
@@ -14,13 +15,13 @@
 
                 <ResourceDictionary x:Key="Light">
                     <ResourceDictionary.MergedDictionaries>
-                        <ResourceInclude Source="avares://FileSyncX/Assets/Styles/LightTheme.axaml" />
+                        <ResourceInclude Source="avares://FileSyncX/Styles/LightTheme.axaml" />
                     </ResourceDictionary.MergedDictionaries>
                 </ResourceDictionary>
 
                 <ResourceDictionary x:Key="Dark">
                     <ResourceDictionary.MergedDictionaries>
-                        <ResourceInclude Source="avares://FileSyncX/Assets/Styles/DarkTheme.axaml" />
+                        <ResourceInclude Source="avares://FileSyncX/Styles/DarkTheme.axaml" />
                     </ResourceDictionary.MergedDictionaries>
                 </ResourceDictionary>
 
@@ -30,13 +31,10 @@
 
     <Application.Styles>
         <FluentTheme />
-
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
-      
-
         <materialIcons:MaterialIconStyles />
 
-        <StyleInclude Source="avares://FileSyncX/Assets/Styles/SharedStyles.axaml" />
+        <StyleInclude Source="avares://FileSyncX/Styles/SharedStyles.axaml" />
     </Application.Styles>
 
 </Application>

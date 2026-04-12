@@ -352,7 +352,7 @@ public static class MoverEOrganizarArquivos
         }
 
         var clustersOcr = new List<List<(ArquivoModel Arquivo, byte[] ConteudoFinal, HashSet<string> Palavras)>>();
-        double taxaCorteOcr = 0.30;
+        double taxaCorteOcr = 0.15;
 
         foreach (var doc in documentosOcr)
         {

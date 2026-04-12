@@ -61,6 +61,31 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    public async Task EmbutirOcrNosPdfsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual)) return;
+
+        // Executamos em uma Task para manter a UI responsiva enquanto o OCR processa na GPU/CPU
+        await Task.Run(async () =>
+        {
+            await ProcessadorOcrPdf.InjetarOcrEmPdfsAsync(PastaAtual, () => IsPaused, (caminho, status) =>
+            {
+                // Define se o arquivo ainda está em processamento baseando-se nos status finalizadores
+                // Adicionado "concluído" e "PAUSADO" para cobrir as novas mensagens da função
+                bool isProcessing = !(status.Contains("sucesso") ||
+                                      status.Contains("Erro") ||
+                                      status.Contains("Ignorado") ||
+                                      status.Contains("concluído") ||
+                                      status.Contains("PAUSADO"));
+
+                ReportarProgresso(caminho, isProcessing, status);
+            });
+        });
+
+        Recarregar();
+    }
+
+    [RelayCommand]
     public async Task ConverterImagensParaPdfAsync()
     {
         if (string.IsNullOrWhiteSpace(PastaAtual) || ListaArquivos.Count == 0) return;
@@ -72,6 +97,41 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
             await MoverEOrganizarArquivos.ConverterImagensParaPdfComOcrAsync(PastaAtual, arquivosSnap, () => IsPaused, ReportarProgresso);
         });
 
+        Recarregar();
+    }
+    [RelayCommand]
+    public async Task AgruparPdfsPorPrefixoAsync()
+    {
+        if (string.IsNullOrWhiteSpace(PastaAtual) || ListaArquivos.Count == 0) return;
+
+        var arquivosSnap = ListaArquivos.ToList();
+
+        await Task.Run(async () =>
+        {
+            await Tools.AgruparPdfsPorPrefixoAsync(PastaAtual, arquivosSnap, () => IsPaused, (caminho, isProcessing, status) =>
+            {
+                // Usando a mesma tratativa de loading visual
+                ReportarProgresso(caminho, isProcessing, status);
+            });
+        });
+
+        Recarregar();
+    }
+
+    [RelayCommand]
+    public async Task RemoverDuplicatasAsync()
+    {
+        // Garante que existe uma pasta selecionada válida
+        if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual)) return;
+
+        // Executa a varredura e limpeza em uma thread de segundo plano (GPU/CPU)
+        await Task.Run(() =>
+        {
+            // O segundo parâmetro 'true' indica que vai limpar as subpastas também
+            DeduplicadorArquivos.RemoverDuplicatasMaisAntigas(PastaAtual, true);
+        });
+
+        // Atualiza o Grid na tela com os arquivos sobreviventes
         Recarregar();
     }
 

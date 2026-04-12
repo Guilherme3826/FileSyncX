@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UglyToad.PdfPig;
-using Tesseract;
 using FileSyncX.Funcoes.GerenciadorArquivos;
 using System;
 using System.Collections.ObjectModel;
@@ -12,7 +11,7 @@ using System.Linq;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Avalonia.Threading; // Necessário para atualizar a UI a partir da Task
+using Avalonia.Threading;
 
 namespace FileSyncX.ViewModels;
 
@@ -33,7 +32,15 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [ObservableProperty]
     private string _pastaAtual = string.Empty;
 
-    // Função que será enviada para a classe estática para atualizar a linha do arquivo em tempo real
+    [ObservableProperty]
+    private bool _isPaused = false;
+
+    [RelayCommand]
+    public void PausarRetomar()
+    {
+        IsPaused = !IsPaused;
+    }
+
     private void ReportarProgresso(string caminhoCompleto, bool processando, string statusMsg)
     {
         var arquivo = ListaArquivos.FirstOrDefault(a => a.CaminhoCompleto == caminhoCompleto);
@@ -45,9 +52,8 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
                 if (!string.IsNullOrWhiteSpace(statusMsg))
                     arquivo.StatusSincronizacao = statusMsg;
 
-                if (!processando)
+                if (!processando && statusMsg != "PAUSADO - Caches salvos.")
                 {
-                    // Quando terminar, define o ícone como concluído
                     arquivo.IconKind = "CheckCircle";
                 }
             });
@@ -57,11 +63,13 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [RelayCommand]
     public async Task ConverterImagensParaPdfAsync()
     {
-        if (string.IsNullOrWhiteSpace(PastaAtual)) return;
+        if (string.IsNullOrWhiteSpace(PastaAtual) || ListaArquivos.Count == 0) return;
 
-        await Task.Run(() =>
+        var arquivosSnap = ListaArquivos.ToList();
+
+        await Task.Run(async () =>
         {
-            MoverEOrganizarArquivos.ConverterImagensParaPdfComOcr(PastaAtual);
+            await MoverEOrganizarArquivos.ConverterImagensParaPdfComOcrAsync(PastaAtual, arquivosSnap, () => IsPaused, ReportarProgresso);
         });
 
         Recarregar();
@@ -71,13 +79,13 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [RelayCommand]
     public async Task OrganizarPorOcrAsync()
     {
-        if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual)) return;
+        if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual) || ListaArquivos.Count == 0) return;
 
-        // Roda em segundo plano para não travar a interface
-        await Task.Run(() =>
+        var arquivosSnap = ListaArquivos.ToList();
+
+        await Task.Run(async () =>
         {
-            // Passamos a função ReportarProgresso para controlar a UI (animação de loading e status)
-            MoverEOrganizarArquivos.OrganizarPdfsPorSimilaridadeOcr(PastaAtual, ReportarProgresso);
+            await MoverEOrganizarArquivos.OrganizarPdfsPorSimilaridadeOcrAsync(PastaAtual, arquivosSnap, () => IsPaused, ReportarProgresso);
         });
 
         Recarregar();
@@ -86,12 +94,13 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [RelayCommand]
     public async Task OrganizarPorLayoutVisualAsync()
     {
-        if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual)) return;
+        if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual) || ListaArquivos.Count == 0) return;
 
-        await Task.Run(() =>
+        var arquivosSnap = ListaArquivos.ToList();
+
+        await Task.Run(async () =>
         {
-            // Enviamos o callback de progresso para a função
-            MoverEOrganizarArquivos.OrganizarPdfsPorLayoutVisual(PastaAtual, ReportarProgresso);
+            await MoverEOrganizarArquivos.OrganizarPdfsPorLayoutVisualAsync(PastaAtual, arquivosSnap, () => IsPaused, ReportarProgresso);
         });
 
         Recarregar();
@@ -119,23 +128,32 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
                 StatusSincronizacao = "Aguardando",
                 CaminhoCompleto = pasta.FullName,
                 IconKind = "Folder",
-                IsProcessing = false
+                IsProcessing = false,
+                Conteudo = null
             });
         }
 
         var arquivosNoDisco = diretorio.GetFiles("*", SearchOption.TopDirectoryOnly);
         foreach (var arquivo in arquivosNoDisco)
         {
+            byte[] conteudoLido = null;
+            try
+            {
+                conteudoLido = File.ReadAllBytes(arquivo.FullName);
+            }
+            catch { }
+
             ListaArquivos.Add(new ArquivoModel
             {
                 Nome = arquivo.Name,
                 Extensao = arquivo.Extension.ToUpper(),
                 TamanhoFormatado = FormatarTamanho(arquivo.Length),
                 DataModificacao = arquivo.LastWriteTime,
-                StatusSincronizacao = "Aguardando",
+                StatusSincronizacao = "Lido na RAM",
                 CaminhoCompleto = arquivo.FullName,
                 IconKind = ObterIconePorExtensao(arquivo.Extension),
-                IsProcessing = false
+                IsProcessing = false,
+                Conteudo = conteudoLido
             });
         }
 
@@ -167,9 +185,9 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
         if (bytes == 0) return "0 B";
 
         int magnitude = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
-        double valorAjustado = Math.Round(bytes / Math.Pow(1024, magnitude), 1);
+        double doubleValor = Math.Round(bytes / Math.Pow(1024, magnitude), 1);
 
-        return $"{valorAjustado} {tamanhos[magnitude]}";
+        return $"{doubleValor} {tamanhos[magnitude]}";
     }
 
     [RelayCommand]
@@ -178,15 +196,20 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [RelayCommand]
     public void Sincronizar()
     {
-        MoverEOrganizarArquivos.Executar(PastaAtual, ListaArquivos);
+        if (ListaArquivos.Count > 0)
+        {
+            var arquivosSnap = ListaArquivos.ToList();
+            MoverEOrganizarArquivos.Executar(PastaAtual, arquivosSnap);
+            Recarregar();
+        }
     }
 
     [RelayCommand]
     public void OrganizarPastas()
     {
-        if (!string.IsNullOrWhiteSpace(PastaAtual))
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
         {
-            MoverEOrganizarArquivos.OrganizarPastasPorCategoria(PastaAtual);
+            MoverEOrganizarArquivos.OrganizarPastasPorCategoria(PastaAtual, ListaArquivos.ToList());
             Recarregar();
         }
     }
@@ -194,9 +217,9 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [RelayCommand]
     public void OrganizarPastasComIA()
     {
-        if (!string.IsNullOrWhiteSpace(PastaAtual))
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
         {
-            MoverEOrganizarArquivos.OrganizarPastasDesconhecidasPorConteudo(PastaAtual);
+            MoverEOrganizarArquivos.OrganizarPastasDesconhecidasPorConteudo(PastaAtual, ListaArquivos.ToList());
             Recarregar();
         }
     }
@@ -204,9 +227,9 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [RelayCommand]
     public void ReCategorizarPastas()
     {
-        if (!string.IsNullOrWhiteSpace(PastaAtual))
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
         {
-            MoverEOrganizarArquivos.ReCategorizarPastasExistentes(PastaAtual);
+            MoverEOrganizarArquivos.ReCategorizarPastasExistentes(PastaAtual, ListaArquivos.ToList());
             Recarregar();
         }
     }
@@ -214,9 +237,9 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [RelayCommand]
     public void OrganizarPorPalavraChave()
     {
-        if (!string.IsNullOrWhiteSpace(PastaAtual))
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
         {
-            MoverEOrganizarArquivos.OrganizarPastasPorPalavraChave(PastaAtual);
+            MoverEOrganizarArquivos.OrganizarPastasPorPalavraChave(PastaAtual, ListaArquivos.ToList());
             Recarregar();
         }
     }
@@ -224,9 +247,9 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [RelayCommand]
     public void OrganizarPorAnoMes()
     {
-        if (!string.IsNullOrWhiteSpace(PastaAtual))
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
         {
-            MoverEOrganizarArquivos.OrganizarPastasPorAnoMes(PastaAtual);
+            MoverEOrganizarArquivos.OrganizarPastasPorAnoMes(PastaAtual, ListaArquivos.ToList());
             Recarregar();
         }
     }
@@ -267,7 +290,8 @@ public partial class ArquivoModel : ObservableObject
     [ObservableProperty]
     private string _iconKind = "FileOutline";
 
-    // Nova propriedade para controlar a animação na UI
     [ObservableProperty]
     private bool _isProcessing = false;
+
+    public byte[]? Conteudo { get; set; }
 }

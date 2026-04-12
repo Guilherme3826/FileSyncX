@@ -1,3 +1,4 @@
+// ConfiguracoesViewModel.cs
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
@@ -137,14 +138,11 @@ public partial class ConfiguracoesViewModel : ObservableObject
         string extLimpa = Extensao.Replace(".", "").ToLower();
         string catAlvo = CategoriaSelecionada.Trim();
 
-        // 1. Verificar se a extensão já existe em alguma categoria
         string? categoriaAntiga = _configuracaoAtual.Categorias
             .FirstOrDefault(c => c.Value.ContainsKey(extLimpa)).Key;
 
-        // 2. Lógica de decisão
         if (categoriaAntiga != null)
         {
-            // Se já existe na mesma categoria, não faz nada (ou apenas atualiza descrição)
             if (categoriaAntiga == catAlvo)
             {
                 if (_configuracaoAtual.Categorias[catAlvo][extLimpa] == DescricaoExtensao)
@@ -152,10 +150,8 @@ public partial class ConfiguracoesViewModel : ObservableObject
             }
             else
             {
-                // Se existe em categoria diferente, remove da antiga para mover
                 _configuracaoAtual.Categorias[categoriaAntiga].Remove(extLimpa);
 
-                // Remove a categoria do dicionário se ela ficar vazia após a remoção
                 if (_configuracaoAtual.Categorias[categoriaAntiga].Count == 0)
                 {
                     _configuracaoAtual.Categorias.Remove(categoriaAntiga);
@@ -164,7 +160,6 @@ public partial class ConfiguracoesViewModel : ObservableObject
             }
         }
 
-        // 3. Garantir que a categoria alvo exista
         if (!_configuracaoAtual.Categorias.ContainsKey(catAlvo))
         {
             _configuracaoAtual.Categorias[catAlvo] = new Dictionary<string, string>();
@@ -172,7 +167,6 @@ public partial class ConfiguracoesViewModel : ObservableObject
                 Categorias.Add(catAlvo);
         }
 
-        // 4. Salvar/Atualizar a extensão na categoria correta
         _configuracaoAtual.Categorias[catAlvo][extLimpa] = DescricaoExtensao;
         _configuracaoAtual.PastaDestinoRaiz = PastaRaiz;
 

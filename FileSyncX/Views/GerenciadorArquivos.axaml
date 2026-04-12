@@ -132,6 +132,23 @@
                                 Kind="Sync" />
                         </Button>
 
+                        <Button Classes="ToolBtn" ToolTip.Tip="Pausar/Retomar Processamento" Command="{Binding PausarRetomarCommand}">
+                            <Grid>
+                                <materialIcons:MaterialIcon
+                                    Width="20"
+                                    Height="20"
+                                    Foreground="{DynamicResource AppWarning}"
+                                    Kind="Pause"
+                                    IsVisible="{Binding !IsPaused}" />
+                                <materialIcons:MaterialIcon
+                                    Width="20"
+                                    Height="20"
+                                    Foreground="{DynamicResource AppSuccess}"
+                                    Kind="Play"
+                                    IsVisible="{Binding IsPaused}" />
+                            </Grid>
+                        </Button>
+
                         <Button Classes="ToolBtn" ToolTip.Tip="Remover Selecionados">
                             <materialIcons:MaterialIcon
                                 Width="20"

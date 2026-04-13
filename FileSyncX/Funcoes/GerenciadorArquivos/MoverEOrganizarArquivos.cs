@@ -688,8 +688,6 @@ public static class MoverEOrganizarArquivos
 
         System.Diagnostics.Debug.WriteLine($"[Executar] Total de arquivos recebidos na lista: {arquivos.Count()}");
 
-        // CORREÇÃO: Removido o 'a.Conteudo != null'. 
-        // Os arquivos serão lidos do disco na hora H se o Conteudo estiver vazio na RAM.
         var arquivosParaProcessar = arquivos.Where(a =>
             !a.Nome.Equals("extensoes_desconhecidas.txt", StringComparison.OrdinalIgnoreCase) &&
             !a.Nome.Equals("erros_organizacao.txt", StringComparison.OrdinalIgnoreCase)).ToList();
@@ -703,14 +701,14 @@ public static class MoverEOrganizarArquivos
         {
             System.Diagnostics.Debug.WriteLine($"[Executar] Processando grupo de nome: '{grupo.Key}' com {grupo.Count()} arquivo(s).");
 
-            var partesShapefile = grupo.Where(a => ExtensoesShapefile.Contains(a.Extensao.ToLower())).ToList();
-            var arquivosNormais = grupo.Where(a => !ExtensoesShapefile.Contains(a.Extensao.ToLower())).ToList();
+            var partesShapefile = grupo.Where(a => !string.IsNullOrEmpty(a.Extensao) && ExtensoesShapefile.Contains(a.Extensao, StringComparer.OrdinalIgnoreCase)).ToList();
+            var arquivosNormais = grupo.Where(a => string.IsNullOrEmpty(a.Extensao) || !ExtensoesShapefile.Contains(a.Extensao, StringComparer.OrdinalIgnoreCase)).ToList();
 
             System.Diagnostics.Debug.WriteLine($"[Executar] O grupo '{grupo.Key}' possui {partesShapefile.Count} arquivo(s) Shapefile e {arquivosNormais.Count} arquivo(s) normais.");
 
             if (partesShapefile.Count > 0)
             {
-                string extBase = partesShapefile.First().Extensao.Replace(".", "").ToLower();
+                string extBase = (partesShapefile.First().Extensao ?? string.Empty).Replace(".", "").ToLowerInvariant();
                 string categoriaShape = "Desconhecidos";
 
                 System.Diagnostics.Debug.WriteLine($"[Executar] Extensão base do Shapefile detectada: '{extBase}'. Buscando categoria no JSON.");

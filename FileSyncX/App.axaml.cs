@@ -46,7 +46,7 @@ public partial class App : Application
             }
             else
             {
-                services.AddTransient(type);
+                services.AddSingleton(type);
             }
         }
 

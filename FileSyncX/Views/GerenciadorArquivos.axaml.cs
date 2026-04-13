@@ -20,8 +20,18 @@ public partial class GerenciadorArquivos : UserControl
         InitializeComponent();
         AddHandler(DragDrop.DropEvent, DropFolder);
     }
+    public void DataGrid_DoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        if (DataContext is GerenciadorArquivosViewModel vm && vm.ArquivoSelecionado != null)
+        {
+            if (vm.ArquivoSelecionado.IconKind == "Folder")
+            {
+                vm.IrPara(vm.ArquivoSelecionado.CaminhoCompleto);
+            }
+        }
+    }
 
-    private void DropFolder(object? sender, DragEventArgs e)
+    public void DropFolder(object? sender, DragEventArgs e)
     {
         var files = e.DataTransfer.TryGetFiles();
 

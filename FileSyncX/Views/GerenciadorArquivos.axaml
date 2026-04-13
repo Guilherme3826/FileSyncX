@@ -15,8 +15,12 @@ mc:Ignorable="d">
 
     <UserControl.Styles>
         <Style Selector="materialIcons|MaterialIcon.spin">
+            <Setter Property="RenderTransformOrigin" Value="50%,50%" />
             <Style.Animations>
                 <Animation Duration="0:0:1" IterationCount="Infinite">
+                    <Animation.Easing>
+                        <LinearEasing />
+                    </Animation.Easing>
                     <KeyFrame Cue="0%">
                         <Setter Property="RotateTransform.Angle" Value="0" />
                     </KeyFrame>
@@ -30,298 +34,166 @@ mc:Ignorable="d">
 
     <Grid Background="{DynamicResource AppToolbarBg}" RowDefinitions="Auto, *">
 
-        <Border
-        Grid.Row="0"
-        Padding="20,15"
-        Background="{DynamicResource AppPrimaryDark}">
+        <Border Grid.Row="0" Padding="20,15" Background="{DynamicResource AppPrimaryDark}">
             <StackPanel Orientation="Horizontal" Spacing="15">
-                <Border
-                Width="40"
-                Height="40"
-                Padding="2"
-                Background="{DynamicResource AppWhite}"
-                CornerRadius="4">
-                    <materialIcons:MaterialIcon
-                    Width="24"
-                    Height="24"
-                    Foreground="{DynamicResource AppPrimaryDark}"
-                    Kind="FolderSync" />
+                <Border Width="40" Height="40" Padding="2" Background="{DynamicResource AppWhite}" CornerRadius="4">
+                    <materialIcons:MaterialIcon Width="24" Height="24" Foreground="{DynamicResource AppPrimaryDark}" Kind="FolderSync" />
                 </Border>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock
-                    FontSize="16"
-                    FontWeight="Bold"
-                    Foreground="{DynamicResource AppWhite}"
-                    Text="Gerenciador de Arquivos" />
-                    <TextBlock
-                    FontSize="12"
-                    Foreground="{DynamicResource AppWhite}"
-                    Opacity="0.8"
-                    Text="Sincronização e verificação de diretórios locais" />
+                    <TextBlock FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AppWhite}" Text="Gerenciador de Arquivos" />
+                    <TextBlock FontSize="12" Foreground="{DynamicResource AppWhite}" Opacity="0.8" Text="Sincronização e verificação de diretórios locais" />
                 </StackPanel>
             </StackPanel>
         </Border>
 
-        <Border
-        Grid.Row="1"
-        Margin="20"
-        Background="{DynamicResource AppSurface}"
-        BoxShadow="0 2 10 0 #30000000"
-        CornerRadius="4">
-            <Grid RowDefinitions="Auto, Auto, Auto, *, Auto">
+        <Border Grid.Row="1" Margin="20" Background="{DynamicResource AppSurface}" BoxShadow="0 2 10 0 #30000000" CornerRadius="4">
+            <Grid RowDefinitions="Auto, Auto, Auto, Auto, *, Auto">
 
-                <Border
-                Grid.Row="0"
-                Margin="20,20,20,0"
-                Padding="30"
-                Background="{DynamicResource AppPrimaryLight}"
-                BorderBrush="{DynamicResource AppPrimary}"
-                BorderThickness="2"
-                CornerRadius="6">
-                    <StackPanel
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Spacing="10">
-                        <materialIcons:MaterialIcon
-                        Width="48"
-                        Height="48"
-                        HorizontalAlignment="Center"
-                        Foreground="{DynamicResource AppPrimary}"
-                        Kind="CloudUploadOutline" />
-                        <TextBlock
-                        HorizontalAlignment="Center"
-                        FontSize="16"
-                        FontWeight="SemiBold"
-                        Foreground="{DynamicResource AppPrimaryDark}"
-                        Text="Arraste e solte uma pasta aqui para iniciar a verificação" />
-                        <TextBlock
-                        HorizontalAlignment="Center"
-                        FontSize="12"
-                        Foreground="{DynamicResource AppTextSecondary}"
-                        Text="Ou utilize o botão 'Selecionar Pasta' abaixo" />
+                <Border Grid.Row="0" Margin="20,20,20,0" Padding="30" Background="{DynamicResource AppPrimaryLight}" BorderBrush="{DynamicResource AppPrimary}" BorderThickness="2" CornerRadius="6">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                        <materialIcons:MaterialIcon Width="48" Height="48" HorizontalAlignment="Center" Foreground="{DynamicResource AppPrimary}" Kind="CloudUploadOutline" />
+                        <TextBlock HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource AppPrimaryDark}" Text="Arraste e solte uma pasta aqui para iniciar a verificação" />
+                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{DynamicResource AppTextSecondary}" Text="Ou utilize a barra de navegação / botões abaixo" />
                     </StackPanel>
                 </Border>
 
-                <Grid
-                Grid.Row="1"
-                Margin="20,20,20,10"
-                ColumnDefinitions="Auto, *, Auto">
-                    <StackPanel
-                    Grid.Column="0"
-                    Orientation="Horizontal"
-                    Spacing="5">
+                <Grid Grid.Row="1" Margin="20,15,20,0" ColumnDefinitions="Auto, Auto, *, Auto">
+                    <Button Grid.Column="0" Classes="ToolBtn" ToolTip.Tip="Voltar" Command="{Binding VoltarCommand}" Margin="0,0,5,0">
+                        <materialIcons:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="{DynamicResource AppTextPrimary}" />
+                    </Button>
+                    <Button Grid.Column="1" Classes="ToolBtn" ToolTip.Tip="Avançar" Command="{Binding AvancarCommand}" Margin="0,0,10,0">
+                        <materialIcons:MaterialIcon Kind="ArrowRight" Width="24" Height="24" Foreground="{DynamicResource AppTextPrimary}" />
+                    </Button>
+                    <TextBox Grid.Column="2" Text="{Binding CaminhoDigitado, Mode=TwoWay}" PlaceholderText="Cole o diretório aqui..." VerticalContentAlignment="Center" Margin="0,0,10,0" />
+                    <Button Grid.Column="3" Classes="ActionBtn" Command="{Binding EscanearDiretorioCommand}" Padding="15,8">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <materialIcons:MaterialIcon Kind="MagnifyScan" Width="18" Height="18" Foreground="{DynamicResource AppWhite}" />
+                            <TextBlock Text="Escanear" Foreground="{DynamicResource AppWhite}" VerticalAlignment="Center" FontWeight="Bold" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <Grid Grid.Row="2" Margin="20,15,20,10" ColumnDefinitions="Auto, *, Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5">
+
                         <Button Margin="0,0,15,0" Classes="ActionBtn">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <materialIcons:MaterialIcon
-                                Width="18"
-                                Height="18"
-                                Foreground="{DynamicResource AppWhite}"
-                                Kind="FolderSearchOutline" />
-                                <TextBlock
-                                VerticalAlignment="Center"
-                                Foreground="{DynamicResource AppWhite}"
-                                Text="Selecionar Pasta" />
+                                <materialIcons:MaterialIcon Width="18" Height="18" Foreground="{DynamicResource AppWhite}" Kind="FolderSearchOutline" />
+                                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource AppWhite}" Text="Selecionar Pasta" />
                             </StackPanel>
                         </Button>
 
                         <Button Classes="ToolBtn" ToolTip.Tip="Sincronizar">
-                            <materialIcons:MaterialIcon
-                            Width="20"
-                            Height="20"
-                            Foreground="{DynamicResource AppTextSecondary}"
-                            Kind="Sync" />
+                            <materialIcons:MaterialIcon Width="20" Height="20" Foreground="{DynamicResource AppTextSecondary}" Kind="Sync" />
                         </Button>
 
                         <Button Classes="ToolBtn" ToolTip.Tip="Pausar/Retomar Processamento" Command="{Binding PausarRetomarCommand}">
                             <Grid>
-                                <materialIcons:MaterialIcon
-                                Width="20"
-                                Height="20"
-                                Foreground="{DynamicResource AppWarning}"
-                                Kind="Pause"
-                                IsVisible="{Binding !IsPaused}" />
-                                <materialIcons:MaterialIcon
-                                Width="20"
-                                Height="20"
-                                Foreground="{DynamicResource AppSuccess}"
-                                Kind="Play"
-                                IsVisible="{Binding IsPaused}" />
+                                <materialIcons:MaterialIcon Width="20" Height="20" Foreground="{DynamicResource AppWarning}" Kind="Pause" IsVisible="{Binding !IsPaused}" />
+                                <materialIcons:MaterialIcon Width="20" Height="20" Foreground="{DynamicResource AppSuccess}" Kind="Play" IsVisible="{Binding IsPaused}" />
                             </Grid>
                         </Button>
 
-                        <Button Classes="ToolBtn" ToolTip.Tip="Remover Selecionados">
-                            <materialIcons:MaterialIcon
-                            Width="20"
-                            Height="20"
-                            Foreground="{DynamicResource AppError}"
-                            Kind="DeleteOutline" />
+                        <Button Classes="ToolBtn" ToolTip.Tip="Remover Selecionados" Command="{Binding RemoverItensSelecionadosCommand}" CommandParameter="{Binding #ArquivosGrid.SelectedItems}">
+                            <materialIcons:MaterialIcon Width="20" Height="20" Foreground="{DynamicResource AppError}" Kind="DeleteOutline" />
                         </Button>
 
-                        <Button Classes="ToolBtn" ToolTip.Tip="Recarregar">
-                            <materialIcons:MaterialIcon
-                            Width="20"
-                            Height="20"
-                            Foreground="{DynamicResource AppPrimary}"
-                            Kind="Reload" />
+                        <Button Classes="ToolBtn" ToolTip.Tip="Recarregar" Command="{Binding RecarregarCommand}">
+                            <materialIcons:MaterialIcon Width="20" Height="20" Foreground="{DynamicResource AppPrimary}" Kind="Reload" />
                         </Button>
 
-                        <Border
-                        Width="1"
-                        Height="20"
-                        Margin="10,0"
-                        Background="{DynamicResource AppBorder}" />
+                        <Button Classes="ToolBtn" ToolTip.Tip="Limpar Grid" Command="{Binding LimparGridCommand}">
+                            <materialIcons:MaterialIcon Width="20" Height="20" Foreground="{DynamicResource AppError}" Kind="Broom" />
+                        </Button>
+
+                        <Border Width="1" Height="20" Margin="10,0" Background="{DynamicResource AppBorder}" />
 
                         <Button Classes="ToolBtn" ToolTip.Tip="Opções Avançadas">
-                            <materialIcons:MaterialIcon
-                            Width="20"
-                            Height="20"
-                            Foreground="{DynamicResource AppTextSecondary}"
-                            Kind="DotsVertical" />
+                            <materialIcons:MaterialIcon Width="20" Height="20" Foreground="{DynamicResource AppTextSecondary}" Kind="DotsVertical" />
                             <Button.Flyout>
                                 <MenuFlyout Placement="BottomEdgeAlignedRight">
                                     <MenuItem Command="{Binding SincronizarCommand}" Header="Sincronizar arquivos">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon
-                                            Width="18"
-                                            Height="18"
-                                            Kind="Sync" />
+                                            <materialIcons:MaterialIcon Width="18" Height="18" Kind="Sync" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
                                     <MenuItem Command="{Binding OrganizarPastasCommand}" Header="Organizar pastas">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon
-                                            Width="18"
-                                            Height="18"
-                                            Kind="FolderSettings" />
+                                            <materialIcons:MaterialIcon Width="18" Height="18" Kind="FolderSettings" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
                                     <MenuItem Command="{Binding OrganizarPastasComIACommand}" Header="Organizar pastas com IA">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon
-                                            Width="18"
-                                            Height="18"
-                                            Kind="Brain" />
+                                            <materialIcons:MaterialIcon Width="18" Height="18" Kind="Brain" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
                                     <MenuItem Command="{Binding OrganizarPorPalavraChaveCommand}" Header="Organizar por palavra-chave">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon
-                                            Width="18"
-                                            Height="18"
-                                            Kind="KeyVariant" />
+                                            <materialIcons:MaterialIcon Width="18" Height="18" Kind="KeyVariant" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
                                     <MenuItem Command="{Binding OrganizarPorAnoMesCommand}" Header="Organizar por Ano e Mês">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon
-                                            Width="18"
-                                            Height="18"
-                                            Kind="CalendarRange" />
+                                            <materialIcons:MaterialIcon Width="18" Height="18" Kind="CalendarRange" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
                                     <MenuItem Command="{Binding ReCategorizarPastasCommand}" Header="Re-Categorizar Pastas">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon
-                                            Width="18"
-                                            Height="18"
-                                            Kind="FolderRefresh" />
+                                            <materialIcons:MaterialIcon Width="18" Height="18" Kind="FolderRefresh" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
                                     <MenuItem Command="{Binding OrganizarPorOcrCommand}" Header="Organizar PDF por HASH">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon
-                                            Width="18"
-                                            Height="18"
-                                            Kind="FolderRefresh" />
+                                            <materialIcons:MaterialIcon Width="18" Height="18" Kind="FolderRefresh" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
                                     <MenuItem Command="{Binding ConverterImagensParaPdfCommand}" Header="Converter Imagens para PDF (OCR)">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon
-                                            Width="18"
-                                            Height="18"
-                                            Kind="FilePdfBox" />
+                                            <materialIcons:MaterialIcon Width="18" Height="18" Kind="FilePdfBox" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
-                                    <MenuItem Header="Organizar por Layout Visual (Imagens)"
-                                              Command="{Binding OrganizarPorLayoutVisualCommand}">
+                                    <MenuItem Header="Organizar por Layout Visual (Imagens)" Command="{Binding OrganizarPorLayoutVisualCommand}">
                                         <MenuItem.Icon>
                                             <materialIcons:MaterialIcon Kind="ImageSearch" Width="18" Height="18" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
-                                    <MenuItem Header="EmbutirOcrNosPdfs"
-                                              Command="{Binding EmbutirOcrNosPdfsCommand}">
+                                    <MenuItem Header="Embutir OCR nos PDFs (Pesquisa)" Command="{Binding EmbutirOcrNosPdfsCommand}">
                                         <MenuItem.Icon>
                                             <materialIcons:MaterialIcon Kind="ImageSearch" Width="18" Height="18" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
                                     <MenuItem Command="{Binding AgruparPdfsPorPrefixoCommand}" Header="Mesclar PDFs Sequenciais (Scanner)">
                                         <MenuItem.Icon>
-                                            <materialIcons:MaterialIcon
-                                            Width="18"
-                                            Height="18"
-                                            Kind="FileDocumentMultipleOutline" />
+                                            <materialIcons:MaterialIcon Width="18" Height="18" Kind="FileDocumentMultipleOutline" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
                                     <MenuItem Command="{Binding RemoverDuplicatasCommand}" Header="Remover Duplicatas (1), (2)...">
                                         <MenuItem.Icon>
                                             <materialIcons:MaterialIcon Width="18" Height="18" Kind="Broom" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-
-                                    <Separator />
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
                     </StackPanel>
 
-                    <StackPanel
-                    Grid.Column="2"
-                    Orientation="Horizontal"
-                    Spacing="10">
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
                         <Grid Width="250">
-                            <TextBox
-                            VerticalContentAlignment="Center"
-                            Classes="SearchBox"
-                            PlaceholderText="Pesquisar arquivo ou extensão..."
-                            Text="{Binding TermoPesquisa, Mode=TwoWay}" />
-                            <materialIcons:MaterialIcon
-                            Width="20"
-                            Margin="0,0,8,0"
-                            HorizontalAlignment="Right"
-                            Foreground="{DynamicResource AppTextSecondary}"
-                            Kind="Magnify" />
+                            <TextBox VerticalContentAlignment="Center" Classes="SearchBox" PlaceholderText="Pesquisar arquivo ou extensão..." Text="{Binding TermoPesquisa, Mode=TwoWay}" />
+                            <materialIcons:MaterialIcon Width="20" Margin="0,0,8,0" HorizontalAlignment="Right" Foreground="{DynamicResource AppTextSecondary}" Kind="Magnify" />
                         </Grid>
-
-                        <Button Classes="ToolBtn" ToolTip.Tip="Exportar Relatório">
-                            <materialIcons:MaterialIcon
-                            Width="22"
-                            Height="22"
-                            Foreground="{DynamicResource AppTextPrimary}"
-                            Kind="Export" />
+                        <Button Classes="ToolBtn" ToolTip.Tip="Exportar Relatório" Command="{Binding ExportarRelatorioCommand}">
+                            <materialIcons:MaterialIcon Width="22" Height="22" Foreground="{DynamicResource AppTextPrimary}" Kind="Export" />
                         </Button>
                     </StackPanel>
                 </Grid>
 
-                <Border
-                Grid.Row="2"
-                Height="1"
-                Margin="0,5,0,0"
-                Background="{DynamicResource AppBorder}" />
+                <Border Grid.Row="3" Height="1" Margin="0,5,0,0" Background="{DynamicResource AppBorder}" />
 
                 <DataGrid
-                Grid.Row="3"
+                x:Name="ArquivosGrid"
+                Grid.Row="4"
+                DoubleTapped="DataGrid_DoubleTapped"
                 Margin="0,0,0,5"
                 x:CompileBindings="False"
                 AutoGenerateColumns="False"
@@ -335,94 +207,67 @@ mc:Ignorable="d">
                 RowBackground="Transparent"
                 SelectedItem="{Binding ArquivoSelecionado, Mode=TwoWay}">
 
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Abrir Arquivo" Command="{Binding AbrirItemCommand}" IsVisible="{Binding IsArquivoSelecionado}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FileArrowLeftRightOutline" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Abrir Pasta no Explorer" Command="{Binding AbrirItemCommand}" IsVisible="{Binding IsPastaSelecionada}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="FolderOpenOutline" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Copiar Nome" Command="{Binding CopiarNomeCommand}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="ContentCopy" Width="18" Height="18" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="Apagar" Command="{Binding ApagarItemCommand}" Foreground="{DynamicResource AppError}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="18" Height="18" Foreground="{DynamicResource AppError}" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Apagar Selecionados" Command="{Binding RemoverItensSelecionadosCommand}" CommandParameter="{Binding #ArquivosGrid.SelectedItems}" Foreground="{DynamicResource AppError}">
+                                <MenuItem.Icon>
+                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="18" Height="18" Foreground="{DynamicResource AppError}" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+
                     <DataGrid.Columns>
                         <DataGridTemplateColumn Width="50" Header="">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid Margin="10,0" Width="20" Height="20">
-                                        <materialIcons:MaterialIcon
-                                        Width="20"
-                                        Height="20"
-                                        Foreground="{DynamicResource AppTextSecondary}"
-                                        Kind="{Binding IconKind}"
-                                        IsVisible="{Binding !IsProcessing}" />
-
-                                        <materialIcons:MaterialIcon
-                                        Classes="spin"
-                                        Width="20"
-                                        Height="20"
-                                        Foreground="{DynamicResource AppPrimary}"
-                                        Kind="Loading"
-                                        IsVisible="{Binding IsProcessing}" />
+                                        <materialIcons:MaterialIcon Width="20" Height="20" Foreground="{DynamicResource AppTextSecondary}" Kind="{Binding IconKind}" IsVisible="{Binding !IsProcessing}" />
+                                        <materialIcons:MaterialIcon Classes="spin" Width="20" Height="20" Foreground="{DynamicResource AppPrimary}" Kind="Loading" IsVisible="{Binding IsProcessing}" />
                                     </Grid>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTextColumn
-                        Width="300"
-                        Binding="{Binding Nome}"
-                        FontWeight="SemiBold"
-                        Foreground="{DynamicResource AppTextPrimary}"
-                        Header="NOME DO ARQUIVO" />
+                        <DataGridTextColumn Width="Auto" Binding="{Binding Nome}" SortMemberPath="Nome" FontWeight="SemiBold" Foreground="{DynamicResource AppTextPrimary}" Header="NOME DO ARQUIVO" />
 
-                        <DataGridTextColumn
-                        Width="100"
-                        Binding="{Binding Extensao}"
-                        Foreground="{DynamicResource AppTextSecondary}"
-                        Header="TIPO" />
+                        <DataGridTextColumn Width="Auto" Binding="{Binding Extensao}" SortMemberPath="QuantidadeItens" Foreground="{DynamicResource AppTextSecondary}" Header="TIPO" />
 
-                        <DataGridTextColumn
-                        Width="120"
-                        Binding="{Binding TamanhoFormatado}"
-                        Foreground="{DynamicResource AppTextPrimary}"
-                        Header="TAMANHO" />
+                        <DataGridTextColumn Width="Auto" Binding="{Binding TamanhoFormatado}" SortMemberPath="TamanhoBytes" Foreground="{DynamicResource AppTextPrimary}" Header="TAMANHO" />
 
-                        <DataGridTextColumn
-                        Width="180"
-                        Binding="{Binding DataModificacao, StringFormat=\{0:dd/MM/yyyy HH:mm\}}"
-                        Foreground="{DynamicResource AppTextPrimary}"
-                        Header="MODIFICADO EM" />
+                        <DataGridTextColumn Width="Auto" Binding="{Binding DataModificacao, StringFormat=\{0:dd/MM/yyyy HH:mm\}}" SortMemberPath="DataModificacao" Foreground="{DynamicResource AppTextPrimary}" Header="MODIFICADO EM" />
 
-                        <DataGridTextColumn
-                        Width="Auto"
-                        Binding="{Binding StatusSincronizacao}"
-                        FontWeight="Bold"
-                        Foreground="{DynamicResource AppPrimary}"
-                        Header="STATUS" />
+                        <DataGridTextColumn Width="Auto" Binding="{Binding StatusSincronizacao}" FontWeight="Bold" Foreground="{DynamicResource AppPrimary}" Header="STATUS" />
 
-                        <DataGridTextColumn
-                        Width="*"
-                        Binding="{Binding CaminhoCompleto}"
-                        Foreground="{DynamicResource AppTextSecondary}"
-                        Header="CAMINHO LOCAL" />
+                        <DataGridTextColumn Width="*" Binding="{Binding CaminhoCompleto}" Foreground="{DynamicResource AppTextSecondary}" Header="CAMINHO LOCAL" />
                     </DataGrid.Columns>
                 </DataGrid>
 
-                <Border
-                Grid.Row="4"
-                Height="35"
-                Padding="15,0"
-                Background="{DynamicResource AppPrimaryDark}"
-                CornerRadius="0,0,4,4">
-                    <StackPanel
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Center"
-                    Orientation="Horizontal"
-                    Spacing="10">
-                        <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="11"
-                        FontWeight="Bold"
-                        Foreground="{DynamicResource AppWhite}"
-                        Opacity="0.8"
-                        Text="TOTAL DE ITENS:" />
-                        <TextBlock
-                        VerticalAlignment="Center"
-                        FontSize="14"
-                        FontWeight="Bold"
-                        Foreground="{DynamicResource AppWhite}"
-                        Text="{Binding TotalArquivos}" />
+                <Border Grid.Row="5" Height="35" Padding="15,0" Background="{DynamicResource AppPrimaryDark}" CornerRadius="0,0,4,4">
+                    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal" Spacing="10">
+                        <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AppWhite}" Opacity="0.8" Text="TOTAL DE ITENS:" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AppWhite}" Text="{Binding TotalArquivos}" />
                     </StackPanel>
                 </Border>
 

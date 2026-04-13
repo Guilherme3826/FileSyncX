@@ -82,18 +82,25 @@ public static class MoverEOrganizarArquivos
         return novoCaminho;
     }
 
+ 
     private static void EscreverArquivoDoConteudo(ArquivoModel arquivo, string pastaDestinoEspecifica, ConfigModel config, byte[]? conteudoEspecifico = null, string? extensaoAlvoOverride = null)
     {
+        // Lê da RAM se existir, senão, lê do disco na hora H. Se não achar, aborta.
         byte[]? bytesParaEscrever = conteudoEspecifico ?? arquivo.Conteudo;
+
+        if (bytesParaEscrever == null)
+        {
+            try { bytesParaEscrever = File.ReadAllBytes(arquivo.CaminhoCompleto); }
+            catch { return; }
+        }
+
         if (bytesParaEscrever == null || bytesParaEscrever.Length == 0) return;
 
         string extensaoBase = extensaoAlvoOverride ?? arquivo.Extensao;
         string baseDestino = ObterPastaDestinoBase(extensaoBase, config);
 
-        // Tratamento da pasta de categoria/OCR para não exceder o limite do Windows
         if (!string.IsNullOrWhiteSpace(pastaDestinoEspecifica))
         {
-            // Limita a subpasta a 60 caracteres e remove caracteres inválidos
             pastaDestinoEspecifica = TratarNomeArquivoOuPasta(pastaDestinoEspecifica, 60);
             baseDestino = Path.Combine(baseDestino, pastaDestinoEspecifica);
         }
@@ -107,7 +114,6 @@ public static class MoverEOrganizarArquivos
             nomeFinal = Path.GetFileNameWithoutExtension(arquivo.Nome) + extensaoAlvoOverride;
         }
 
-        // Tratamento do nome do arquivo (limite de 120 caracteres para o corpo do nome)
         string ext = Path.GetExtension(nomeFinal);
         string nomeSemExt = Path.GetFileNameWithoutExtension(nomeFinal);
         nomeSemExt = TratarNomeArquivoOuPasta(nomeSemExt, 120);

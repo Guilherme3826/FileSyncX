@@ -264,6 +264,19 @@ mc:Ignorable="d">
                     </DataGrid.Columns>
                 </DataGrid>
 
+                <Border
+                Grid.Row="4"
+                ZIndex="10"
+                Background="#90000000"
+                CornerRadius="4"
+                Margin="0,0,0,5"
+                IsVisible="{Binding IsBusy}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="15">
+                        <materialIcons:MaterialIcon Classes="spin" Width="64" Height="64" Foreground="{DynamicResource AppPrimary}" Kind="Loading" />
+                        <TextBlock Text="Processando..." FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AppWhite}" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
                 <Border Grid.Row="5" Height="35" Padding="15,0" Background="{DynamicResource AppPrimaryDark}" CornerRadius="0,0,4,4">
                     <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal" Spacing="10">
                         <TextBlock VerticalAlignment="Center" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AppWhite}" Opacity="0.8" Text="TOTAL DE ITENS:" />

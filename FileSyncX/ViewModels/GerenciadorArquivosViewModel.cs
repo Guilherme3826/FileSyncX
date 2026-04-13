@@ -91,114 +91,84 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
         }
         catch { }
     }
-
-    [RelayCommand]
-    public void ApagarItem()
-    {
-        if (ArquivoSelecionado == null) return;
-
-        try
-        {
-            if (ArquivoSelecionado.IconKind == "Folder")
-            {
-                if (Directory.Exists(ArquivoSelecionado.CaminhoCompleto))
-                {
-                    // O 'true' indica que vai apagar a pasta e todos os arquivos dentro dela
-                    Directory.Delete(ArquivoSelecionado.CaminhoCompleto, true);
-                }
-            }
-            else
-            {
-                if (File.Exists(ArquivoSelecionado.CaminhoCompleto))
-                {
-                    File.Delete(ArquivoSelecionado.CaminhoCompleto);
-                }
-            }
-
-            // Remove do Grid imediatamente após apagar no disco e atualiza a contagem
-            ListaArquivos.Remove(ArquivoSelecionado);
-            TotalArquivos = ListaArquivos.Count;
-        }
-        catch { }
-    }
-
-
-
     // Construtor para carregar o último caminho ao iniciar a View
+    [ObservableProperty]
+    private bool _isBusy;
+
+    // Construtor
     public GerenciadorArquivosViewModel()
     {
-        CarregarUltimaPasta();
+        _ = CarregarUltimaPastaAsync();
     }
 
-    // Sincroniza o TextBox sempre que o ViewModel muda de diretório internamente
     partial void OnPastaAtualChanged(string value)
     {
         CaminhoDigitado = value;
     }
 
     [RelayCommand]
-    public void EscanearDiretorio()
+    public async Task EscanearDiretorioAsync()
     {
-        IrPara(CaminhoDigitado);
+        await IrParaAsync(CaminhoDigitado);
     }
 
-    // Método centralizado que gerencia o histórico e o JSON antes de carregar o grid
-    public void IrPara(string caminho, bool viaHistorico = false)
+    // Método central refatorado para assíncrono
+    public async Task IrParaAsync(string caminho, bool viaHistorico = false)
     {
         if (string.IsNullOrWhiteSpace(caminho) || !Directory.Exists(caminho)) return;
 
-        // Só empilha no histórico se estiver indo para uma pasta diferente
         if (!viaHistorico && !string.IsNullOrWhiteSpace(PastaAtual) && !PastaAtual.Equals(caminho, StringComparison.OrdinalIgnoreCase))
         {
             _historicoVoltar.Push(PastaAtual);
-            _historicoAvancar.Clear(); // Limpa o "Avançar" se o usuário tomar um rumo novo
+            _historicoAvancar.Clear();
         }
 
-        LerArquivosDaPasta(caminho);
-        SalvarUltimaPasta(caminho);
+        await LerArquivosDaPastaAsync(caminho);
+        await SalvarUltimaPastaAsync(caminho);
     }
 
     [RelayCommand]
-    public void Voltar()
+    public async Task VoltarAsync()
     {
         if (_historicoVoltar.Count > 0)
         {
             _historicoAvancar.Push(PastaAtual);
             string anterior = _historicoVoltar.Pop();
-            IrPara(anterior, true);
+            await IrParaAsync(anterior, true);
         }
     }
 
     [RelayCommand]
-    public void Avancar()
+    public async Task AvancarAsync()
     {
         if (_historicoAvancar.Count > 0)
         {
             _historicoVoltar.Push(PastaAtual);
             string proximo = _historicoAvancar.Pop();
-            IrPara(proximo, true);
+            await IrParaAsync(proximo, true);
         }
     }
 
-    // PERSISTÊNCIA EM JSON
-    private void CarregarUltimaPasta()
+    // PERSISTÊNCIA EM JSON ASSÍNCRONA
+    private async Task CarregarUltimaPastaAsync()
     {
         try
         {
             string pathCache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FileSyncX", "ultima_pasta.json");
             if (File.Exists(pathCache))
             {
-                string caminho = System.Text.Json.JsonSerializer.Deserialize<string>(File.ReadAllText(pathCache));
+                string json = await File.ReadAllTextAsync(pathCache);
+                string caminho = System.Text.Json.JsonSerializer.Deserialize<string>(json) ?? string.Empty;
                 if (!string.IsNullOrWhiteSpace(caminho) && Directory.Exists(caminho))
                 {
-                    IrPara(caminho);
+                    await IrParaAsync(caminho);
                 }
             }
         }
         catch { }
     }
 
-    private void SalvarUltimaPasta(string caminho)
+    private async Task SalvarUltimaPastaAsync(string caminho)
     {
         try
         {
@@ -206,15 +176,11 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
             if (!Directory.Exists(dirCache)) Directory.CreateDirectory(dirCache);
 
             string pathCache = Path.Combine(dirCache, "ultima_pasta.json");
-            File.WriteAllText(pathCache, System.Text.Json.JsonSerializer.Serialize(caminho));
+            string json = System.Text.Json.JsonSerializer.Serialize(caminho);
+            await File.WriteAllTextAsync(pathCache, json);
         }
         catch { }
     }
-
-
-
-
-
 
     [RelayCommand]
     public void PausarRetomar()
@@ -229,6 +195,269 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
         PastaAtual = string.Empty;
         TotalArquivos = 0;
         ArquivoSelecionado = null;
+    }
+
+    [RelayCommand]
+    public async Task ApagarItemAsync()
+    {
+        if (ArquivoSelecionado == null) return;
+
+        IsBusy = true;
+        try
+        {
+            var arquivo = ArquivoSelecionado;
+            await Task.Run(() =>
+            {
+                if (arquivo.IconKind == "Folder")
+                {
+                    if (Directory.Exists(arquivo.CaminhoCompleto))
+                        Directory.Delete(arquivo.CaminhoCompleto, true);
+                }
+                else
+                {
+                    if (File.Exists(arquivo.CaminhoCompleto))
+                        File.Delete(arquivo.CaminhoCompleto);
+                }
+            });
+
+            ListaArquivos.Remove(arquivo);
+            TotalArquivos = ListaArquivos.Count;
+        }
+        catch { }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task RemoverItensSelecionadosAsync(object parameter)
+    {
+        if (parameter is System.Collections.IList itens)
+        {
+            var arquivosParaRemover = itens.Cast<ArquivoModel>().ToList();
+            if (arquivosParaRemover.Count == 0) return;
+
+            IsBusy = true;
+            try
+            {
+                await Task.Run(() =>
+                {
+                    foreach (var arquivo in arquivosParaRemover)
+                    {
+                        try
+                        {
+                            if (arquivo.IconKind == "Folder")
+                            {
+                                if (Directory.Exists(arquivo.CaminhoCompleto))
+                                    Directory.Delete(arquivo.CaminhoCompleto, true);
+                            }
+                            else
+                            {
+                                if (File.Exists(arquivo.CaminhoCompleto))
+                                    File.Delete(arquivo.CaminhoCompleto);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Erro ao remover {arquivo.Nome}: {ex.Message}");
+                        }
+                    }
+                });
+
+                // Remove da interface na thread principal
+                foreach (var arq in arquivosParaRemover)
+                {
+                    ListaArquivos.Remove(arq);
+                }
+
+                TotalArquivos = ListaArquivos.Count;
+                ArquivoSelecionado = null;
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+    }
+
+    // LEITURA PESADA TRANSFERIDA PARA BACKGROUND (Evita o travamento)
+    public async Task LerArquivosDaPastaAsync(string caminhoPasta)
+    {
+        if (string.IsNullOrWhiteSpace(caminhoPasta) || !Directory.Exists(caminhoPasta))
+            return;
+
+        IsBusy = true; // Mostra a animação
+        PastaAtual = caminhoPasta;
+        ListaArquivos.Clear();
+
+        try
+        {
+            var tempList = new List<ArquivoModel>();
+
+            await Task.Run(() =>
+            {
+                var diretorio = new DirectoryInfo(caminhoPasta);
+
+                var pastasNoDisco = diretorio.GetDirectories("*", SearchOption.TopDirectoryOnly);
+                foreach (var pasta in pastasNoDisco)
+                {
+                    ObterTamanhoEContagemPastaSegura(pasta, out long tamanhoPastaBytes, out int qtdItens);
+
+                    tempList.Add(new ArquivoModel
+                    {
+                        Nome = pasta.Name,
+                        Extensao = $"Pasta ({qtdItens} itens)",
+                        QuantidadeItens = qtdItens,
+                        TamanhoBytes = tamanhoPastaBytes,
+                        TamanhoFormatado = FormatarTamanho(tamanhoPastaBytes),
+                        DataModificacao = pasta.LastWriteTime,
+                        StatusSincronizacao = "Aguardando",
+                        CaminhoCompleto = pasta.FullName,
+                        IconKind = "Folder",
+                        IsProcessing = false,
+                        Conteudo = null
+                    });
+                }
+
+                var arquivosNoDisco = diretorio.GetFiles("*", SearchOption.TopDirectoryOnly);
+                foreach (var arquivo in arquivosNoDisco)
+                {
+                    tempList.Add(new ArquivoModel
+                    {
+                        Nome = arquivo.Name,
+                        Extensao = arquivo.Extension.ToUpper(),
+                        TamanhoBytes = arquivo.Length,
+                        TamanhoFormatado = FormatarTamanho(arquivo.Length),
+                        DataModificacao = arquivo.LastWriteTime,
+                        StatusSincronizacao = "Aguardando",
+                        CaminhoCompleto = arquivo.FullName,
+                        IconKind = ObterIconePorExtensao(arquivo.Extension),
+                        IsProcessing = false,
+                        Conteudo = null
+                    });
+                }
+            });
+
+            // Ordena a lista em memória do maior para o menor (em Bytes) antes de enviar para a tela
+            var listaOrdenada = tempList.OrderByDescending(arq => arq.TamanhoBytes).ToList();
+
+            // Despeja a lista já classificada na UI
+            foreach (var item in listaOrdenada)
+            {
+                ListaArquivos.Add(item);
+            }
+            TotalArquivos = ListaArquivos.Count;
+        }
+        finally
+        {
+            IsBusy = false; // Esconde a animação
+        }
+    }
+
+    [RelayCommand]
+    public async Task SincronizarAsync()
+    {
+        if (ListaArquivos.Count > 0)
+        {
+            IsBusy = true;
+            try
+            {
+                var arquivosSnap = ListaArquivos.ToList();
+                await Task.Run(() => MoverEOrganizarArquivos.Executar(PastaAtual, arquivosSnap));
+                await RecarregarAsync();
+            }
+            finally { IsBusy = false; }
+        }
+    }
+
+    [RelayCommand]
+    public async Task OrganizarPastasAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
+        {
+            IsBusy = true;
+            try
+            {
+                var arquivosSnap = ListaArquivos.ToList();
+                await Task.Run(() => MoverEOrganizarArquivos.OrganizarPastasPorCategoria(PastaAtual, arquivosSnap));
+                await RecarregarAsync();
+            }
+            finally { IsBusy = false; }
+        }
+    }
+
+    [RelayCommand]
+    public async Task OrganizarPastasComIAAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
+        {
+            IsBusy = true;
+            try
+            {
+                var arquivosSnap = ListaArquivos.ToList();
+                await Task.Run(() => MoverEOrganizarArquivos.OrganizarPastasDesconhecidasPorConteudo(PastaAtual, arquivosSnap));
+                await RecarregarAsync();
+            }
+            finally { IsBusy = false; }
+        }
+    }
+
+    [RelayCommand]
+    public async Task ReCategorizarPastasAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
+        {
+            IsBusy = true;
+            try
+            {
+                var arquivosSnap = ListaArquivos.ToList();
+                await Task.Run(() => MoverEOrganizarArquivos.ReCategorizarPastasExistentes(PastaAtual, arquivosSnap));
+                await RecarregarAsync();
+            }
+            finally { IsBusy = false; }
+        }
+    }
+
+    [RelayCommand]
+    public async Task OrganizarPorPalavraChaveAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
+        {
+            IsBusy = true;
+            try
+            {
+                var arquivosSnap = ListaArquivos.ToList();
+                await Task.Run(() => MoverEOrganizarArquivos.OrganizarPastasPorPalavraChave(PastaAtual, arquivosSnap));
+                await RecarregarAsync();
+            }
+            finally { IsBusy = false; }
+        }
+    }
+
+    [RelayCommand]
+    public async Task OrganizarPorAnoMesAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
+        {
+            IsBusy = true;
+            try
+            {
+                var arquivosSnap = ListaArquivos.ToList();
+                await Task.Run(() => MoverEOrganizarArquivos.OrganizarPastasPorAnoMes(PastaAtual, arquivosSnap));
+                await RecarregarAsync();
+            }
+            finally { IsBusy = false; }
+        }
+    }
+
+    [RelayCommand]
+    public async Task RecarregarAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(PastaAtual))
+        {
+            await LerArquivosDaPastaAsync(PastaAtual);
+        }
     }
 
     private void ReportarProgresso(string caminhoCompleto, bool processando, string statusMsg)
@@ -255,24 +484,25 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual)) return;
 
-        // Executamos em uma Task para manter a UI responsiva enquanto o OCR processa na GPU/CPU
-        await Task.Run(async () =>
+        IsBusy = true;
+        try
         {
-            await ProcessadorOcrPdf.InjetarOcrEmPdfsAsync(PastaAtual, () => IsPaused, (caminho, status) =>
+            await Task.Run(async () =>
             {
-                // Define se o arquivo ainda está em processamento baseando-se nos status finalizadores
-                // Adicionado "concluído" e "PAUSADO" para cobrir as novas mensagens da função
-                bool isProcessing = !(status.Contains("sucesso") ||
-                                      status.Contains("Erro") ||
-                                      status.Contains("Ignorado") ||
-                                      status.Contains("concluído") ||
-                                      status.Contains("PAUSADO"));
+                await ProcessadorOcrPdf.InjetarOcrEmPdfsAsync(PastaAtual, () => IsPaused, (caminho, status) =>
+                {
+                    bool isProcessing = !(status.Contains("sucesso") ||
+                                          status.Contains("Erro") ||
+                                          status.Contains("Ignorado") ||
+                                          status.Contains("concluído") ||
+                                          status.Contains("PAUSADO"));
 
-                ReportarProgresso(caminho, isProcessing, status);
+                    ReportarProgresso(caminho, isProcessing, status);
+                });
             });
-        });
-
-        Recarregar();
+            await RecarregarAsync();
+        }
+        finally { IsBusy = false; }
     }
 
     [RelayCommand]
@@ -280,110 +510,73 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(PastaAtual) || ListaArquivos.Count == 0) return;
 
-        var arquivosSnap = ListaArquivos.ToList();
-
-        await Task.Run(async () =>
+        IsBusy = true;
+        try
         {
-            await MoverEOrganizarArquivos.ConverterImagensParaPdfComOcrAsync(PastaAtual, arquivosSnap, () => IsPaused, ReportarProgresso);
-        });
-
-        Recarregar();
+            var arquivosSnap = ListaArquivos.ToList();
+            await Task.Run(async () =>
+            {
+                await MoverEOrganizarArquivos.ConverterImagensParaPdfComOcrAsync(PastaAtual, arquivosSnap, () => IsPaused, ReportarProgresso);
+            });
+            await RecarregarAsync();
+        }
+        finally { IsBusy = false; }
     }
+
     [RelayCommand]
     public async Task AgruparPdfsPorPrefixoAsync()
     {
         if (string.IsNullOrWhiteSpace(PastaAtual) || ListaArquivos.Count == 0) return;
 
-        var arquivosSnap = ListaArquivos.ToList();
-
-        await Task.Run(async () =>
+        IsBusy = true;
+        try
         {
-            await Tools.AgruparPdfsPorPrefixoAsync(PastaAtual, arquivosSnap, () => IsPaused, (caminho, isProcessing, status) =>
+            var arquivosSnap = ListaArquivos.ToList();
+            await Task.Run(async () =>
             {
-                // Usando a mesma tratativa de loading visual
-                ReportarProgresso(caminho, isProcessing, status);
+                await Tools.AgruparPdfsPorPrefixoAsync(PastaAtual, arquivosSnap, () => IsPaused, (caminho, isProcessing, status) =>
+                {
+                    ReportarProgresso(caminho, isProcessing, status);
+                });
             });
-        });
-
-        Recarregar();
+            await RecarregarAsync();
+        }
+        finally { IsBusy = false; }
     }
 
     [RelayCommand]
     public async Task RemoverDuplicatasAsync()
     {
-        // Garante que existe uma pasta selecionada válida
         if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual)) return;
 
-        // Executa a varredura e limpeza em uma thread de segundo plano (GPU/CPU)
-        await Task.Run(() =>
+        IsBusy = true;
+        try
         {
-            // O segundo parâmetro 'true' indica que vai limpar as subpastas também
-            DeduplicadorArquivos.RemoverDuplicatasMaisAntigas(PastaAtual, true);
-        });
-
-        // Atualiza o Grid na tela com os arquivos sobreviventes
-        Recarregar();
-    }
-
-    [RelayCommand]
-    public void RemoverItensSelecionados(object parameter)
-    {
-        // O Avalonia passa os SelectedItems como um IList
-        if (parameter is System.Collections.IList itens)
-        {
-            // Convertemos para uma lista estática para não haver erro de modificação de coleção durante o loop
-            var arquivosParaRemover = itens.Cast<ArquivoModel>().ToList();
-
-            if (arquivosParaRemover.Count == 0) return;
-
-            foreach (var arquivo in arquivosParaRemover)
+            await Task.Run(() =>
             {
-                try
-                {
-                    if (arquivo.IconKind == "Folder")
-                    {
-                        if (Directory.Exists(arquivo.CaminhoCompleto))
-                        {
-                            // Apaga pasta e subpastas
-                            Directory.Delete(arquivo.CaminhoCompleto, true);
-                        }
-                    }
-                    else
-                    {
-                        if (File.Exists(arquivo.CaminhoCompleto))
-                        {
-                            File.Delete(arquivo.CaminhoCompleto);
-                        }
-                    }
-
-                    // Remove da interface
-                    ListaArquivos.Remove(arquivo);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Erro ao remover {arquivo.Nome}: {ex.Message}");
-                }
-            }
-
-            TotalArquivos = ListaArquivos.Count;
-            ArquivoSelecionado = null;
+                DeduplicadorArquivos.RemoverDuplicatasMaisAntigas(PastaAtual, true);
+            });
+            await RecarregarAsync();
         }
+        finally { IsBusy = false; }
     }
-
 
     [RelayCommand]
     public async Task OrganizarPorOcrAsync()
     {
         if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual) || ListaArquivos.Count == 0) return;
 
-        var arquivosSnap = ListaArquivos.ToList();
-
-        await Task.Run(async () =>
+        IsBusy = true;
+        try
         {
-            await MoverEOrganizarArquivos.OrganizarPdfsPorSimilaridadeOcrAsync(PastaAtual, arquivosSnap, () => IsPaused, ReportarProgresso);
-        });
-
-        Recarregar();
+            var arquivosSnap = ListaArquivos.ToList();
+            await Task.Run(async () =>
+            {
+                await MoverEOrganizarArquivos.OrganizarPdfsPorSimilaridadeOcrAsync(PastaAtual, arquivosSnap, () => IsPaused, ReportarProgresso);
+            });
+            await RecarregarAsync();
+        }
+        finally { IsBusy = false; }
     }
 
     [RelayCommand]
@@ -391,70 +584,22 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(PastaAtual) || !Directory.Exists(PastaAtual) || ListaArquivos.Count == 0) return;
 
-        var arquivosSnap = ListaArquivos.ToList();
-
-        await Task.Run(async () =>
+        IsBusy = true;
+        try
         {
-            await MoverEOrganizarArquivos.OrganizarPdfsPorLayoutVisualAsync(PastaAtual, arquivosSnap, () => IsPaused, ReportarProgresso);
-        });
-
-        Recarregar();
+            var arquivosSnap = ListaArquivos.ToList();
+            await Task.Run(async () =>
+            {
+                await MoverEOrganizarArquivos.OrganizarPdfsPorLayoutVisualAsync(PastaAtual, arquivosSnap, () => IsPaused, ReportarProgresso);
+            });
+            await RecarregarAsync();
+        }
+        finally { IsBusy = false; }
     }
 
-    public void LerArquivosDaPasta(string caminhoPasta)
-    {
-        if (string.IsNullOrWhiteSpace(caminhoPasta) || !Directory.Exists(caminhoPasta))
-            return;
+    [RelayCommand]
+    private void ExportarRelatorio() { }
 
-        PastaAtual = caminhoPasta;
-        ListaArquivos.Clear();
-
-        var diretorio = new DirectoryInfo(caminhoPasta);
-
-        var pastasNoDisco = diretorio.GetDirectories("*", SearchOption.TopDirectoryOnly);
-        foreach (var pasta in pastasNoDisco)
-        {
-            // 1. Obtém a quantidade de arquivos e o peso total da pasta de forma segura
-            ObterTamanhoEContagemPastaSegura(pasta, out long tamanhoPastaBytes, out int qtdItens);
-
-            ListaArquivos.Add(new ArquivoModel
-            {
-                Nome = pasta.Name,
-                Extensao = $"Pasta ({qtdItens} itens)", // Mostra a contagem na coluna de tipo
-                QuantidadeItens = qtdItens,
-                TamanhoBytes = tamanhoPastaBytes,       // Guarda o valor real em bytes para ordenar
-                TamanhoFormatado = FormatarTamanho(tamanhoPastaBytes), // Formata para GB, MB, KB
-                DataModificacao = pasta.LastWriteTime,
-                StatusSincronizacao = "Aguardando",
-                CaminhoCompleto = pasta.FullName,
-                IconKind = "Folder",
-                IsProcessing = false,
-                Conteudo = null
-            });
-        }
-
-        var arquivosNoDisco = diretorio.GetFiles("*", SearchOption.TopDirectoryOnly);
-        foreach (var arquivo in arquivosNoDisco)
-        {
-            ListaArquivos.Add(new ArquivoModel
-            {
-                Nome = arquivo.Name,
-                Extensao = arquivo.Extension.ToUpper(),
-                TamanhoBytes = arquivo.Length, // Salva para permitir a ordenação
-                TamanhoFormatado = FormatarTamanho(arquivo.Length),
-                DataModificacao = arquivo.LastWriteTime,
-                StatusSincronizacao = "Aguardando",
-                CaminhoCompleto = arquivo.FullName,
-                IconKind = ObterIconePorExtensao(arquivo.Extension),
-                IsProcessing = false,
-                Conteudo = null
-            });
-        }
-
-        TotalArquivos = ListaArquivos.Count;
-    }
-
-    // NOVO: Método de varredura recursiva protegida contra pastas de sistema/bloqueadas
     private void ObterTamanhoEContagemPastaSegura(DirectoryInfo dir, out long tamanhoTotal, out int qtdItens)
     {
         tamanhoTotal = 0;
@@ -467,7 +612,6 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
             var pastaAtual = pastasPendentes.Dequeue();
             try
             {
-                // Soma os arquivos da pasta atual
                 var arquivos = pastaAtual.GetFiles();
                 foreach (var arq in arquivos)
                 {
@@ -475,17 +619,13 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
                     qtdItens++;
                 }
 
-                // Enfileira subpastas para verificação
                 var subPastas = pastaAtual.GetDirectories();
                 foreach (var sub in subPastas)
                 {
                     pastasPendentes.Enqueue(sub);
                 }
             }
-            catch
-            {
-                // Catch silencioso: Se o Windows barrar o acesso a uma pasta interna, ele ignora só ela e continua a contagem do resto
-            }
+            catch { }
         }
     }
 
@@ -518,82 +658,6 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
 
         return $"{doubleValor} {tamanhos[magnitude]}";
     }
-
-    [RelayCommand]
-    private void SelecionarPasta() { }
-
-    [RelayCommand]
-    public void Sincronizar()
-    {
-        if (ListaArquivos.Count > 0)
-        {
-            var arquivosSnap = ListaArquivos.ToList();
-            MoverEOrganizarArquivos.Executar(PastaAtual, arquivosSnap);
-            Recarregar();
-        }
-    }
-
-    [RelayCommand]
-    public void OrganizarPastas()
-    {
-        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
-        {
-            MoverEOrganizarArquivos.OrganizarPastasPorCategoria(PastaAtual, ListaArquivos.ToList());
-            Recarregar();
-        }
-    }
-
-    [RelayCommand]
-    public void OrganizarPastasComIA()
-    {
-        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
-        {
-            MoverEOrganizarArquivos.OrganizarPastasDesconhecidasPorConteudo(PastaAtual, ListaArquivos.ToList());
-            Recarregar();
-        }
-    }
-
-    [RelayCommand]
-    public void ReCategorizarPastas()
-    {
-        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
-        {
-            MoverEOrganizarArquivos.ReCategorizarPastasExistentes(PastaAtual, ListaArquivos.ToList());
-            Recarregar();
-        }
-    }
-
-    [RelayCommand]
-    public void OrganizarPorPalavraChave()
-    {
-        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
-        {
-            MoverEOrganizarArquivos.OrganizarPastasPorPalavraChave(PastaAtual, ListaArquivos.ToList());
-            Recarregar();
-        }
-    }
-
-    [RelayCommand]
-    public void OrganizarPorAnoMes()
-    {
-        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
-        {
-            MoverEOrganizarArquivos.OrganizarPastasPorAnoMes(PastaAtual, ListaArquivos.ToList());
-            Recarregar();
-        }
-    }
-
-    [RelayCommand]
-    private void Recarregar()
-    {
-        if (!string.IsNullOrWhiteSpace(PastaAtual))
-        {
-            LerArquivosDaPasta(PastaAtual);
-        }
-    }
-
-    [RelayCommand]
-    private void ExportarRelatorio() { }
 }
 
 public partial class ArquivoModel : ObservableObject

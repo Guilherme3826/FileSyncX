@@ -82,7 +82,7 @@ public static class MoverEOrganizarArquivos
         return novoCaminho;
     }
 
- 
+
     private static void EscreverArquivoDoConteudo(ArquivoModel arquivo, string pastaDestinoEspecifica, ConfigModel config, byte[]? conteudoEspecifico = null, string? extensaoAlvoOverride = null)
     {
         // Lê da RAM se existir, senão, lê do disco na hora H. Se não achar, aborta.
@@ -633,55 +633,191 @@ public static class MoverEOrganizarArquivos
 
     public static void Executar(string pastaRaiz, IEnumerable<ArquivoModel> arquivos)
     {
+        System.Diagnostics.Debug.WriteLine($"[Executar] Iniciando processamento. Pasta Raiz: {pastaRaiz}");
         var config = LerConfiguracao();
+        System.Diagnostics.Debug.WriteLine($"[Executar] Configuração lida. Quantidade de categorias carregadas: {config.Categorias.Count}");
 
         if (Directory.Exists(pastaRaiz))
         {
+            System.Diagnostics.Debug.WriteLine($"[Executar] O diretório raiz existe. Iniciando varredura nos subdiretórios.");
             foreach (string sub in Directory.GetDirectories(pastaRaiz))
             {
+                System.Diagnostics.Debug.WriteLine($"[Executar] Analisando subdiretório: {sub}");
                 try
                 {
                     var arqs = Directory.GetFiles(sub);
                     var dirs = Directory.GetDirectories(sub);
+                    System.Diagnostics.Debug.WriteLine($"[Executar] Subdiretório '{sub}' possui {dirs.Length} pastas e {arqs.Length} arquivos.");
+
                     if (dirs.Length == 0 && arqs.Length > 0 && arqs.Length <= 2)
                     {
+                        System.Diagnostics.Debug.WriteLine($"[Executar] Condição atendida para limpar arquivos soltos em '{sub}'. Movendo {arqs.Length} arquivos.");
                         foreach (string arq in arqs)
                         {
+                            System.Diagnostics.Debug.WriteLine($"[Executar] Lendo arquivo órfão: {arq}");
                             FileInfo fi = new FileInfo(arq);
                             byte[]? dummyConteudo = null;
-                            try { dummyConteudo = File.ReadAllBytes(arq); } catch { }
+                            try { dummyConteudo = File.ReadAllBytes(arq); } catch { System.Diagnostics.Debug.WriteLine($"[Executar] Falha ao ler bytes do arquivo: {arq}"); }
                             var arqMod = new ArquivoModel { Nome = fi.Name, Extensao = fi.Extension, CaminhoCompleto = arq, Conteudo = dummyConteudo };
                             EscreverArquivoDoConteudo(arqMod, string.Empty, config);
+                            System.Diagnostics.Debug.WriteLine($"[Executar] Arquivo órfão reescrito: {fi.Name}");
                         }
-                        if (!Directory.EnumerateFileSystemEntries(sub).Any()) Directory.Delete(sub, false);
+                        if (!Directory.EnumerateFileSystemEntries(sub).Any())
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[Executar] Subdiretório '{sub}' está vazio. Excluindo pasta.");
+                            Directory.Delete(sub, false);
+                        }
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Executar] Erro ao analisar subdiretório '{sub}': {ex.Message}");
+                }
             }
         }
-
-        if (arquivos == null || !arquivos.Any()) return;
-        foreach (var arquivo in arquivos)
+        else
         {
-            if (arquivo.Conteudo == null) continue;
-            if (arquivo.Nome.Equals("extensoes_desconhecidas.txt", StringComparison.OrdinalIgnoreCase) ||
-                arquivo.Nome.Equals("erros_organizacao.txt", StringComparison.OrdinalIgnoreCase))
+            System.Diagnostics.Debug.WriteLine($"[Executar] AVISO: Diretório raiz não existe ou não foi encontrado: {pastaRaiz}");
+        }
+
+        if (arquivos == null || !arquivos.Any())
+        {
+            System.Diagnostics.Debug.WriteLine("[Executar] A lista de arquivos recebida é nula ou vazia. Abortando execução.");
+            return;
+        }
+
+        System.Diagnostics.Debug.WriteLine($"[Executar] Total de arquivos recebidos na lista: {arquivos.Count()}");
+
+        // CORREÇÃO: Removido o 'a.Conteudo != null'. 
+        // Os arquivos serão lidos do disco na hora H se o Conteudo estiver vazio na RAM.
+        var arquivosParaProcessar = arquivos.Where(a =>
+            !a.Nome.Equals("extensoes_desconhecidas.txt", StringComparison.OrdinalIgnoreCase) &&
+            !a.Nome.Equals("erros_organizacao.txt", StringComparison.OrdinalIgnoreCase)).ToList();
+
+        System.Diagnostics.Debug.WriteLine($"[Executar] Arquivos válidos para processar (sem ser log): {arquivosParaProcessar.Count}");
+
+        var gruposPorNome = arquivosParaProcessar.GroupBy(a => Path.GetFileNameWithoutExtension(a.Nome));
+        System.Diagnostics.Debug.WriteLine($"[Executar] Arquivos agrupados pelo nome base. Total de grupos formados: {gruposPorNome.Count()}");
+
+        foreach (var grupo in gruposPorNome)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Executar] Processando grupo de nome: '{grupo.Key}' com {grupo.Count()} arquivo(s).");
+
+            var partesShapefile = grupo.Where(a => ExtensoesShapefile.Contains(a.Extensao.ToLower())).ToList();
+            var arquivosNormais = grupo.Where(a => !ExtensoesShapefile.Contains(a.Extensao.ToLower())).ToList();
+
+            System.Diagnostics.Debug.WriteLine($"[Executar] O grupo '{grupo.Key}' possui {partesShapefile.Count} arquivo(s) Shapefile e {arquivosNormais.Count} arquivo(s) normais.");
+
+            if (partesShapefile.Count > 0)
             {
-                arquivo.StatusSincronizacao = "Ignorado (Log)";
-                continue;
+                string extBase = partesShapefile.First().Extensao.Replace(".", "").ToLower();
+                string categoriaShape = "Desconhecidos";
+
+                System.Diagnostics.Debug.WriteLine($"[Executar] Extensão base do Shapefile detectada: '{extBase}'. Buscando categoria no JSON.");
+
+                foreach (var cat in config.Categorias)
+                {
+                    if (cat.Value.ContainsKey(extBase))
+                    {
+                        categoriaShape = cat.Key;
+                        System.Diagnostics.Debug.WriteLine($"[Executar] Categoria encontrada para Shapefile: '{categoriaShape}'.");
+                        break;
+                    }
+                }
+
+                string destinoRaiz = config.PastaDestinoRaiz;
+                if (string.IsNullOrWhiteSpace(destinoRaiz))
+                {
+                    destinoRaiz = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FileSyncX_Destino");
+                    System.Diagnostics.Debug.WriteLine($"[Executar] PastaDestinoRaiz vazia no config. Usando padrão: {destinoRaiz}");
+                }
+
+                string nomePastaShapefile = TratarNomeArquivoOuPasta(grupo.Key, 120);
+                string baseDestinoShapefile = Path.Combine(destinoRaiz, categoriaShape, nomePastaShapefile);
+
+                System.Diagnostics.Debug.WriteLine($"[Executar] Caminho base definido para o Shapefile: {baseDestinoShapefile}");
+
+                if (!Directory.Exists(baseDestinoShapefile))
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Executar] Criando diretório para o conjunto Shapefile: {baseDestinoShapefile}");
+                    Directory.CreateDirectory(baseDestinoShapefile);
+                }
+
+                foreach (var shp in partesShapefile)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Executar] Preparando para mover parte do Shapefile: {shp.Nome}");
+                    try
+                    {
+                        byte[]? bytesParaEscrever = shp.Conteudo;
+                        if (bytesParaEscrever == null)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[Executar] Conteúdo do arquivo {shp.Nome} não está na RAM. Tentando ler do disco.");
+                            try { bytesParaEscrever = File.ReadAllBytes(shp.CaminhoCompleto); } catch { System.Diagnostics.Debug.WriteLine($"[Executar] Falha crítica ao ler {shp.CaminhoCompleto} do disco."); continue; }
+                        }
+
+                        if (bytesParaEscrever != null && bytesParaEscrever.Length > 0)
+                        {
+                            string nomeFinal = TratarNomeArquivoOuPasta(Path.GetFileNameWithoutExtension(shp.Nome), 120) + shp.Extensao;
+                            string caminhoFinal = Path.Combine(baseDestinoShapefile, nomeFinal);
+                            caminhoFinal = ObterCaminhoComTagNovo(caminhoFinal);
+
+                            System.Diagnostics.Debug.WriteLine($"[Executar] Escrevendo arquivo Shapefile no destino final: {caminhoFinal}");
+                            File.WriteAllBytes(caminhoFinal, bytesParaEscrever);
+                            shp.StatusSincronizacao = "Sincronizado p/ JSON";
+
+                            if (File.Exists(shp.CaminhoCompleto))
+                            {
+                                try
+                                {
+                                    File.Delete(shp.CaminhoCompleto);
+                                    System.Diagnostics.Debug.WriteLine($"[Executar] Arquivo original excluído: {shp.CaminhoCompleto}");
+                                }
+                                catch (Exception exDel)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"[Executar] Erro ao excluir arquivo original {shp.CaminhoCompleto}: {exDel.Message}");
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[Executar] Erro no processamento da parte do Shapefile '{shp.Nome}': {ex.Message}");
+                        shp.StatusSincronizacao = "Erro";
+                        RegistrarLogGeral(Path.Combine(pastaRaiz, "erros_organizacao.txt"), $"Erro Executar RAM -> Destino (Shapefile): {ex.Message}");
+                    }
+                }
             }
 
-            try
+            foreach (var arquivoNormal in arquivosNormais)
             {
-                EscreverArquivoDoConteudo(arquivo, string.Empty, config);
-                arquivo.StatusSincronizacao = "Sincronizado p/ JSON";
-            }
-            catch (Exception ex)
-            {
-                arquivo.StatusSincronizacao = "Erro";
-                RegistrarLogGeral(Path.Combine(pastaRaiz, "erros_organizacao.txt"), $"Erro Executar RAM -> Destino: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[Executar] Processando arquivo normal: {arquivoNormal.Nome}");
+                try
+                {
+                    EscreverArquivoDoConteudo(arquivoNormal, string.Empty, config);
+                    arquivoNormal.StatusSincronizacao = "Sincronizado p/ JSON";
+                    System.Diagnostics.Debug.WriteLine($"[Executar] Arquivo normal sincronizado com sucesso: {arquivoNormal.Nome}");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Executar] Erro ao sincronizar arquivo normal '{arquivoNormal.Nome}': {ex.Message}");
+                    arquivoNormal.StatusSincronizacao = "Erro";
+                    RegistrarLogGeral(Path.Combine(pastaRaiz, "erros_organizacao.txt"), $"Erro Executar RAM -> Destino: {ex.Message}");
+                }
             }
         }
+
+        var arquivosIgnorados = arquivos.Where(a =>
+            a.Nome.Equals("extensoes_desconhecidas.txt", StringComparison.OrdinalIgnoreCase) ||
+            a.Nome.Equals("erros_organizacao.txt", StringComparison.OrdinalIgnoreCase)).ToList();
+
+        System.Diagnostics.Debug.WriteLine($"[Executar] Sinalizando status de ignorado para {arquivosIgnorados.Count} arquivo(s) de log.");
+
+        foreach (var ignorado in arquivosIgnorados)
+        {
+            ignorado.StatusSincronizacao = "Ignorado (Log)";
+        }
+
+        System.Diagnostics.Debug.WriteLine("[Executar] Fim da execução do método.");
     }
 
     public static void OrganizarPastasDesconhecidasPorConteudo(string pastaRaiz, IEnumerable<ArquivoModel> arquivos)

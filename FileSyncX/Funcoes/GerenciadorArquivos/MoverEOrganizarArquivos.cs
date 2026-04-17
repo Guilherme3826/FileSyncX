@@ -42,7 +42,130 @@ public static class MoverEOrganizarArquivos
         }
         return new ConfigModel();
     }
+    public static void MoverCategorias(string pastaRaiz, IEnumerable<ArquivoModel> arquivos)
+    {
+        var configAtual = LerConfiguracao();
+        string destinoRaiz = configAtual.PastaDestinoRaiz;
 
+        if (string.IsNullOrWhiteSpace(destinoRaiz))
+        {
+            destinoRaiz = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "FileSyncX_Destino");
+        }
+
+        var pastas = arquivos.Where(a => a.Extensao == "Pasta de Arquivos" || a.IconKind == "Folder").ToList();
+
+        if (pastas.Count == 0) return;
+
+        // OTIMIZAÇÃO 1: Cache em RAM. Evita perguntar ao HD se o mesmo diretório existe milhares de vezes.
+        var diretoriosVerificados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var pasta in pastas)
+        {
+            string caminhoPasta = pasta.CaminhoCompleto;
+            string nomeCategoria = pasta.Nome;
+            string pastaDestinoCategoria = Path.Combine(destinoRaiz, nomeCategoria);
+
+            var todosArquivos = ObterArquivosSeguros(caminhoPasta);
+
+            foreach (string arquivoOrigem in todosArquivos)
+            {
+                string caminhoRelativo = arquivoOrigem.Substring(caminhoPasta.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string arquivoDestino = Path.Combine(pastaDestinoCategoria, caminhoRelativo);
+                string dirDestino = Path.GetDirectoryName(arquivoDestino);
+
+                if (!string.IsNullOrWhiteSpace(dirDestino) && !diretoriosVerificados.Contains(dirDestino))
+                {
+                    if (!Directory.Exists(dirDestino))
+                    {
+                        Directory.CreateDirectory(dirDestino);
+                    }
+                    diretoriosVerificados.Add(dirDestino);
+                }
+
+                try
+                {
+                    // OTIMIZAÇÃO 2: Abordagem Otimista ("Tente primeiro, peça desculpas depois")
+                    if (File.Exists(arquivoDestino))
+                    {
+                        // OTIMIZAÇÃO 3: Métodos estáticos são imensamente mais rápidos que instanciar objetos "new FileInfo()"
+                        if (File.GetLastWriteTimeUtc(arquivoOrigem) > File.GetLastWriteTimeUtc(arquivoDestino))
+                        {
+                            File.Move(arquivoOrigem, arquivoDestino, true);
+                        }
+                        else
+                        {
+                            File.Delete(arquivoOrigem);
+                        }
+                    }
+                    else
+                    {
+                        File.Move(arquivoOrigem, arquivoDestino);
+                    }
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // OTIMIZAÇÃO 4: Fallback de segurança apenas para a minoria dos arquivos que possuem trava de leitura
+                    try
+                    {
+                        RemoverAtributoSomenteLeitura(arquivoOrigem);
+                        if (File.Exists(arquivoDestino)) RemoverAtributoSomenteLeitura(arquivoDestino);
+
+                        if (File.Exists(arquivoDestino))
+                        {
+                            if (File.GetLastWriteTimeUtc(arquivoOrigem) > File.GetLastWriteTimeUtc(arquivoDestino))
+                                File.Move(arquivoOrigem, arquivoDestino, true);
+                            else
+                                File.Delete(arquivoOrigem);
+                        }
+                        else
+                        {
+                            File.Move(arquivoOrigem, arquivoDestino);
+                        }
+                    }
+                    catch (Exception exRetry)
+                    {
+                        RegistrarLogGeral(Path.Combine(pastaRaiz, "erros_organizacao.txt"), $"Falha de acesso após tentar remover trava '{arquivoOrigem}': {exRetry.Message}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    RegistrarLogGeral(Path.Combine(pastaRaiz, "erros_organizacao.txt"), $"Erro ao mover arquivo '{arquivoOrigem}' em MoverCategorias: {ex.Message}");
+                }
+            }
+
+            try
+            {
+                var subDirs = Directory.GetDirectories(caminhoPasta, "*", SearchOption.AllDirectories).OrderByDescending(d => d.Length);
+                foreach (var dir in subDirs)
+                {
+                    if (!Directory.EnumerateFileSystemEntries(dir).Any())
+                    {
+                        Directory.Delete(dir, false);
+                    }
+                }
+
+                if (!Directory.EnumerateFileSystemEntries(caminhoPasta).Any())
+                {
+                    Directory.Delete(caminhoPasta, false);
+                }
+            }
+            catch { }
+        }
+    }
+
+    private static void RemoverAtributoSomenteLeitura(string caminho)
+    {
+        try
+        {
+            var atributos = File.GetAttributes(caminho);
+            if ((atributos & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+            {
+                // Remove estritamente a trava de leitura sem destruir atributos como "Oculto" ou "Sistema"
+                File.SetAttributes(caminho, atributos & ~FileAttributes.ReadOnly);
+            }
+        }
+        catch { }
+    }
     private static string ObterPastaDestinoBase(string extensao, ConfigModel config)
     {
         string extLimpa = extensao.Replace(".", "").ToLower();

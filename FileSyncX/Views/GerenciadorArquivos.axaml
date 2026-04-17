@@ -162,6 +162,14 @@ mc:Ignorable="d">
                                             <materialIcons:MaterialIcon Kind="ImageSearch" Width="18" Height="18" />
                                         </MenuItem.Icon>
                                     </MenuItem>
+
+                                    <MenuItem Header="Mover Categorias p/ Destino" Command="{Binding MoverCategoriasCommand}">
+                                        <MenuItem.Icon>
+                                            <materialIcons:MaterialIcon Kind="FolderMove" Width="18" Height="18" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+
+
                                     <MenuItem Command="{Binding AgruparPdfsPorPrefixoCommand}" Header="Mesclar PDFs Sequenciais (Scanner)">
                                         <MenuItem.Icon>
                                             <materialIcons:MaterialIcon Width="18" Height="18" Kind="FileDocumentMultipleOutline" />

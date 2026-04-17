@@ -55,6 +55,25 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    public async Task MoverCategoriasAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(PastaAtual) && ListaArquivos.Count > 0)
+        {
+            IsBusy = true;
+            try
+            {
+                var arquivosSnap = ListaArquivos.ToList();
+                await Task.Run(() => MoverEOrganizarArquivos.MoverCategorias(PastaAtual, arquivosSnap));
+                await RecarregarAsync();
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+    }
+
+    [RelayCommand]
     public void AbrirItem()
     {
         if (ArquivoSelecionado == null) return;

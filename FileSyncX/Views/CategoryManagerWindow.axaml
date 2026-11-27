@@ -1,0 +1,181 @@
+<Window
+    x:Class="FileSyncX.Views.CategoryManagerWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    mc:Ignorable="d"
+    x:CompileBindings="False"
+    Title="Gerenciador de Categorias Semânticas"
+    Width="1450"
+    Height="900"
+    MinWidth="1120"
+    MinHeight="720"
+    WindowStartupLocation="CenterOwner"
+    Background="{DynamicResource AppToolbarBg}">
+
+    <Grid RowDefinitions="Auto,*" Background="{DynamicResource AppToolbarBg}">
+        <Border Grid.Row="0" Padding="22,16" Background="{DynamicResource AppPrimaryDark}">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                <Border Width="46" Height="46" CornerRadius="8" Background="{DynamicResource AppWhite}" Padding="7">
+                    <materialIcons:MaterialIcon Kind="TagMultiple" Width="32" Height="32" Foreground="{DynamicResource AppPrimaryDark}" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                    <TextBlock Text="Gerenciador de Categorias Semânticas" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource AppWhite}" />
+                    <TextBlock Text="Crie descrições a partir do OCR, gere embeddings e administre a base vetorial do VecktorVault" FontSize="12" Foreground="{DynamicResource AppWhite}" Opacity="0.85" />
+                </StackPanel>
+                <Button Grid.Column="2" Click="Fechar_Click" VerticalAlignment="Center" Padding="14,8">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <materialIcons:MaterialIcon Kind="Close" Width="17" Height="17" />
+                        <TextBlock Text="Fechar" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="18" ColumnDefinitions="390,*" ColumnSpacing="14">
+            <!-- LISTA DE CATEGORIAS -->
+            <Border Grid.Column="0" Padding="14" CornerRadius="8" Background="{DynamicResource AppSurface}">
+                <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="CATEGORIAS CADASTRADAS" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AppTextSecondary}" />
+                            <TextBlock Text="{Binding Categorias.Count, StringFormat='{}{0} categoria(s)'}" FontSize="12" Foreground="{DynamicResource AppTextSecondary}" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Command="{Binding NovaCategoriaCommand}" Padding="11,7" Background="{DynamicResource AppPrimary}" Foreground="{DynamicResource AppWhite}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <materialIcons:MaterialIcon Kind="Plus" Width="17" Height="17" Foreground="{DynamicResource AppWhite}" />
+                                <TextBlock Text="Nova" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <TextBox Grid.Row="1" Text="{Binding FiltroCategorias, Mode=TwoWay}" PlaceholderText="Pesquisar nome, descrição ou pasta..." />
+                    <Button Grid.Row="2"
+                            Command="{Binding ReclassificarDocumentosCommand}"
+                            IsEnabled="{Binding PodeReclassificarDocumentos}"
+                            HorizontalAlignment="Stretch"
+                            Padding="10,8"
+                            Background="{DynamicResource AppPrimary}"
+                            Foreground="{DynamicResource AppWhite}"
+                            ToolTip.Tip="Recompara todos os documentos com embedding armazenado usando os embeddings atuais das categorias. Não executa OCR nem gera novamente os embeddings dos documentos.">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="7">
+                            <materialIcons:MaterialIcon Kind="Brain" Width="17" Height="17" Foreground="{DynamicResource AppWhite}" />
+                            <TextBlock Text="Reclassificar todos os documentos" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Button>
+                    <DataGrid Grid.Row="3"
+                              ItemsSource="{Binding CategoriasFiltradas}"
+                              SelectedItem="{Binding CategoriaSelecionada, Mode=TwoWay}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              GridLinesVisibility="Horizontal"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              CanUserResizeColumns="True"
+                              CanUserSortColumns="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="CATEGORIA" Binding="{Binding CategoryName}" Width="*" />
+                            <DataGridTextColumn Header="DOCS." Binding="{Binding DocumentCount}" Width="65" />
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="52" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <!-- FORMULÁRIO -->
+            <Border Grid.Column="1" Padding="18" CornerRadius="8" Background="{DynamicResource AppSurface}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="13">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="{Binding EstadoFormulario}" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource AppTextPrimary}" />
+                                <TextBlock Text="Anexe um PDF digitalizado, PDF pesquisável ou arquivo de texto OCR. A IA propõe uma categoria e você pode revisar tudo antes de salvar." FontSize="12" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Command="{Binding CarregarCategoriasCommand}" IsEnabled="{Binding !IsBusy}" Padding="10,7" ToolTip.Tip="Atualizar categorias">
+                                <materialIcons:MaterialIcon Kind="Refresh" Width="19" Height="19" />
+                            </Button>
+                        </Grid>
+
+                        <Border Padding="14" CornerRadius="7" BorderBrush="{DynamicResource AppBorder}" BorderThickness="1" Background="{DynamicResource AppToolbarBg}">
+                            <StackPanel Spacing="9">
+                                <TextBlock Text="1. DOCUMENTO DE REFERÊNCIA / OCR" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AppTextSecondary}" />
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <TextBox Text="{Binding ArquivoOcr}" IsReadOnly="True" PlaceholderText="Nenhum documento anexado" VerticalContentAlignment="Center" />
+                                    <Button Grid.Column="1" Click="SelecionarArquivoOcr_Click" IsEnabled="{Binding !IsBusy}" Padding="12,7">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <materialIcons:MaterialIcon Kind="Paperclip" Width="17" Height="17" />
+                                            <TextBlock Text="Anexar OCR" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Grid.Column="2" Command="{Binding GerarDescricaoComIaCommand}" IsEnabled="{Binding PodeGerarDescricao}" Padding="13,7" Background="{DynamicResource AppPrimary}" Foreground="{DynamicResource AppWhite}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <materialIcons:MaterialIcon Kind="AutoFix" Width="17" Height="17" Foreground="{DynamicResource AppWhite}" />
+                                            <TextBlock Text="Gerar com IA" FontWeight="Bold" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <TextBlock Text="Texto extraído:" FontSize="11" Foreground="{DynamicResource AppTextSecondary}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding CaracteresOcr, StringFormat='{}{0:N0} caracteres'}" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource AppTextSecondary}" />
+                                </Grid>
+                                <TextBox Text="{Binding TextoOcrPreview}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="105" MaxHeight="175" PlaceholderText="A prévia do texto OCR aparecerá aqui após anexar o documento." />
+                                <TextBlock Text="Formatos aceitos: PDF, TXT, MD e OCR. Para PDF, o FileSyncX utiliza o serviço de extração/OCR já integrado." FontSize="10" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="2. DADOS DA CATEGORIA" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AppTextSecondary}" />
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Nome da categoria" FontWeight="SemiBold" Foreground="{DynamicResource AppTextPrimary}" />
+                            <TextBox Text="{Binding NomeCategoria, Mode=TwoWay}" PlaceholderText="Ex.: Contratos de arrendamento rural" />
+                        </StackPanel>
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Descrição semântica" FontWeight="SemiBold" Foreground="{DynamicResource AppTextPrimary}" />
+                            <TextBox Text="{Binding DescricaoSemantica, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="150" MaxHeight="260" PlaceholderText="A IA preencherá esta descrição a partir do conteúdo OCR. Revise e complemente antes de salvar." />
+                            <TextBlock Text="A descrição é usada para gerar o embedding de referência e comparar documentos futuros. Prefira termos objetivos, variantes e características documentais." FontSize="10" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Palavras-chave e termos equivalentes" FontWeight="SemiBold" Foreground="{DynamicResource AppTextPrimary}" />
+                            <TextBox Text="{Binding PalavrasChave, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="55" MaxHeight="100" PlaceholderText="Termos técnicos, expressões equivalentes e palavras usadas nos documentos..." />
+                        </StackPanel>
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Pasta de destino" FontWeight="SemiBold" Foreground="{DynamicResource AppTextPrimary}" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding PastaDestino, Mode=TwoWay}" VerticalContentAlignment="Center" PlaceholderText="Selecione a pasta onde os documentos desta categoria serão organizados" />
+                                <Button Grid.Column="1" Click="SelecionarPastaDestino_Click" IsEnabled="{Binding !IsBusy}" Padding="13,7">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <materialIcons:MaterialIcon Kind="FolderOpen" Width="17" Height="17" />
+                                        <TextBlock Text="Selecionar pasta" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+
+                        <Border Height="1" Background="{DynamicResource AppBorder}" Margin="0,3" />
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="9">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="{Binding DocumentosAssociados, StringFormat='{}{0} documento(s) associados'}" FontWeight="SemiBold" Foreground="{DynamicResource AppTextPrimary}" />
+                                <TextBlock Text="{Binding MensagemStatus}" FontSize="11" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Click="ExcluirCategoria_Click" IsEnabled="{Binding PodeExcluir}" Padding="13,8" Background="{DynamicResource AppError}" Foreground="{DynamicResource AppWhite}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <materialIcons:MaterialIcon Kind="DeleteOutline" Width="17" Height="17" Foreground="{DynamicResource AppWhite}" />
+                                    <TextBlock Text="Excluir" />
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="2" Command="{Binding SalvarCategoriaCommand}" IsEnabled="{Binding PodeSalvar}" Padding="17,8" Background="{DynamicResource AppPrimary}" Foreground="{DynamicResource AppWhite}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <materialIcons:MaterialIcon Kind="ContentSave" Width="17" Height="17" Foreground="{DynamicResource AppWhite}" />
+                                    <TextBlock Text="Salvar categoria" FontWeight="Bold" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <TextBlock Text="{Binding MensagemErro}" Foreground="{DynamicResource AppError}" FontSize="11" TextWrapping="Wrap" />
+                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="5" />
+                        <TextBlock Text="Ao excluir uma categoria, os documentos associados são preservados; somente o vínculo com a categoria é removido." FontSize="10" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

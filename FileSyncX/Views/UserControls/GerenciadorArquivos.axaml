@@ -83,6 +83,20 @@ mc:Ignorable="d">
                             </StackPanel>
                         </Button>
 
+                        <Button Margin="0,0,10,0" Classes="ActionBtn" Click="AbrirProcessamentoSemantico_Click" ToolTip.Tip="Indexar, comparar e classificar PDFs com embeddings e pgvector">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Width="18" Height="18" Foreground="{DynamicResource AppWhite}" Kind="Brain" />
+                                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource AppWhite}" Text="IA Semântica PDF" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Margin="0,0,10,0" Classes="ActionBtn" Click="AbrirGerenciadorCategorias_Click" ToolTip.Tip="Cadastrar, editar e excluir categorias semânticas do VecktorVault">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <materialIcons:MaterialIcon Width="18" Height="18" Foreground="{DynamicResource AppWhite}" Kind="TagMultiple" />
+                                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource AppWhite}" Text="Categorias IA" />
+                            </StackPanel>
+                        </Button>
+
                         <Button Classes="ToolBtn" ToolTip.Tip="Sincronizar">
                             <materialIcons:MaterialIcon Width="20" Height="20" Foreground="{DynamicResource AppTextSecondary}" Kind="Sync" />
                         </Button>

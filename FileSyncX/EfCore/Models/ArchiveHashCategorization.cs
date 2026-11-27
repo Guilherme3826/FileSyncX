@@ -8,6 +8,7 @@ public class ArchiveHashCategorization
     // Identificador do registro
     public long Id { get; set; }
 
+
     // Identificador único do documento
     public Guid DocumentUuid { get; set; }
 

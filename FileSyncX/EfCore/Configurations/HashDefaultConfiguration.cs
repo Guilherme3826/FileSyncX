@@ -1,7 +1,5 @@
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
 using FileSyncX.EfCore.Models;
 
 namespace FileSyncX.EfCore.Configurations;
@@ -11,10 +9,10 @@ public sealed class HashDefaultConfiguration
 {
     public void Configure(EntityTypeBuilder<HashDefault> builder)
     {
-        // Tabela
+        // TABELA
         builder.ToTable("tbl_hash_default", "public");
 
-        // Primary Key
+        // PRIMARY KEY
         builder.HasKey(x => x.Id)
             .HasName("pk_tbl_hash_default");
 
@@ -22,6 +20,12 @@ public sealed class HashDefaultConfiguration
         builder.Property(x => x.Id)
             .HasColumnName("id")
             .UseIdentityByDefaultColumn();
+
+        // NAME
+        builder.Property(x => x.Name)
+            .HasColumnName("name")
+            .HasColumnType("text")
+            .IsRequired();
 
         // DESCRIPTION
         builder.Property(x => x.Description)

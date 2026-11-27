@@ -34,11 +34,10 @@ public sealed class VecktorVaultDbContext
         // Schema padrão
         modelBuilder.HasDefaultSchema("public");
 
-        // Habilita o reconhecimento da extensão pgvector
-        modelBuilder.HasPostgresExtension("vector", "public");
+        // Registra a extensão pgvector
+        modelBuilder.HasPostgresExtension("vector");
 
         // Carrega as configurações das entidades
-        // presentes no assembly atual.
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(VecktorVaultDbContext).Assembly);
     }

@@ -8,6 +8,8 @@ public class HashDefault
     // Identificador da categoria
     public int Id { get; set; }
 
+    public string Name { get; set; } = string.Empty;
+
     // Descrição da categoria
     public string Description { get; set; } = string.Empty;
 

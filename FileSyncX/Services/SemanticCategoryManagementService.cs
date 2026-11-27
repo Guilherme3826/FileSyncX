@@ -9,16 +9,12 @@ using Pgvector.EntityFrameworkCore;
 namespace FileSyncX.Services;
 
 /// <summary>
-/// Gerencia categorias semânticas em public.tbl_hash_default.
-/// Os embeddings de categorias são gerados a partir do texto canônico:
-/// nome + descrição semântica + palavras-chave.
+/// CRUD de categorias semânticas em public.tbl_hash_default.
+/// O embedding é regenerado sempre que a descrição é criada ou alterada.
 /// </summary>
 public sealed class SemanticCategoryManagementService : ISemanticCategoryManagementService
 {
     private const int EmbeddingDimensions = 1536;
-    private const string NamePrefix = "Categoria:";
-    private const string DescriptionPrefix = "Descrição semântica:";
-    private const string KeywordsPrefix = "Termos e elementos associados:";
 
     private readonly IDbContextFactory<VecktorVaultDbContext> _dbFactory;
     private readonly IEmbeddingService _embeddingService;
@@ -82,37 +78,29 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
         if (string.IsNullOrWhiteSpace(destinationFolder))
             throw new ArgumentException("Informe a pasta de destino.", nameof(destinationFolder));
 
-        string normalizedName = categoryName.Trim();
-        string normalizedDescription = NormalizeMultilineText(semanticDescription);
-        string normalizedKeywords = NormalizeKeywordText(keywords);
         string folder = Path.GetFullPath(destinationFolder.Trim());
-
         string storedDescription = BuildStoredDescription(
-            normalizedName,
-            normalizedDescription,
-            normalizedKeywords);
+            categoryName,
+            semanticDescription,
+            keywords);
 
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
-        int? duplicateId = await db.HashDefaults
+        bool duplicate = await db.HashDefaults
             .AsNoTracking()
-            .Where(x => x.Id != (categoryId ?? 0) &&
-                        x.Description == storedDescription &&
-                        x.DestinationFolder == folder)
-            .Select(x => (int?)x.Id)
-            .FirstOrDefaultAsync(cancellationToken);
+            .AnyAsync(x =>
+                x.Id != (categoryId ?? 0) &&
+                x.Description == storedDescription &&
+                x.DestinationFolder == folder,
+                cancellationToken);
 
-        // A criação automática é idempotente para um texto e pasta exatamente iguais.
-        // Isso evita duplicar a mesma categoria em reprocessamentos do mesmo documento.
-        if (!categoryId.HasValue && duplicateId.HasValue)
-            return duplicateId.Value;
-
-        if (categoryId.HasValue && duplicateId.HasValue)
+        if (duplicate)
         {
             throw new InvalidOperationException(
-                "Já existe outra categoria com a mesma descrição e pasta de destino.");
+                "Já existe uma categoria com a mesma descrição e pasta de destino.");
         }
 
+        // O texto usado no embedding inclui nome, descrição e termos de busca.
         float[] embeddingValues = await _embeddingService.GenerateEmbeddingAsync(
             storedDescription,
             cancellationToken);
@@ -183,7 +171,7 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
         if (document.Embedding is null)
             throw new InvalidOperationException("O documento não possui embedding persistido.");
 
-        // Obtém a distância real no PostgreSQL/pgvector, sem regenerar embeddings.
+        // Calcula a distância cosseno no PostgreSQL usando os embeddings já persistidos.
         double distance = await db.ArchiveHashCategorizations
             .AsNoTracking()
             .Where(x => x.Id == documentId)
@@ -223,6 +211,7 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
         if (category is null)
             return;
 
+        // Preserva os documentos: remove somente a associação com a categoria.
         await db.ArchiveHashCategorizations
             .Where(x => x.IdHashDefault == categoryId)
             .ExecuteUpdateAsync(
@@ -233,39 +222,38 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<int> ReclassifyAllAsync(
+
+    public async Task<int> ReclassifyWithoutCategoryAsync(
         double minimumSimilarity = 0.75,
         CancellationToken cancellationToken = default)
     {
-        ValidateSimilarity(minimumSimilarity, nameof(minimumSimilarity));
+        if (double.IsNaN(minimumSimilarity) ||
+            double.IsInfinity(minimumSimilarity) ||
+            minimumSimilarity < 0 || minimumSimilarity > 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(minimumSimilarity),
+                "A similaridade mínima deve estar entre 0 e 1.");
+        }
 
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
+        bool hasCategories = await db.HashDefaults.AnyAsync(cancellationToken);
+        if (!hasCategories)
+            return 0;
+
+        // Inclui documentos anteriormente classificados cuja categoria foi
+        // removida (FK SET NULL), além de documentos pending/unclassified.
         var documents = await db.ArchiveHashCategorizations
-            .Where(x => x.Embedding != null)
+            .Where(x => x.IdHashDefault == null && x.Embedding != null)
             .OrderBy(x => x.Id)
             .ToListAsync(cancellationToken);
 
-        if (documents.Count == 0)
-            return 0;
+        int processed = 0;
 
-        bool hasCategories = await db.HashDefaults.AnyAsync(cancellationToken);
-        DateTimeOffset now = DateTimeOffset.UtcNow;
-
-        foreach (ArchiveHashCategorization document in documents)
+        foreach (var document in documents)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            if (!hasCategories)
-            {
-                document.IdHashDefault = null;
-                document.SimilarityScore = null;
-                document.ClassificationStatus = "unclassified";
-                document.DestinationFolder = null;
-                document.DestinationFile = null;
-                document.ClassifiedAt = now;
-                continue;
-            }
 
             var best = await db.HashDefaults
                 .AsNoTracking()
@@ -281,26 +269,29 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
 
             if (best is null)
             {
+                document.ClassificationStatus = "unclassified";
                 document.IdHashDefault = null;
                 document.SimilarityScore = null;
-                document.ClassificationStatus = "unclassified";
                 document.DestinationFolder = null;
-                document.ClassifiedAt = now;
+                document.ClassifiedAt = DateTimeOffset.UtcNow;
                 continue;
             }
 
-            double similarity = Math.Clamp(1d - best.Distance, -1d, 1d);
-            bool approved = similarity >= minimumSimilarity;
+            double similarity = Math.Clamp(1d - best.Distance, 0d, 1d);
+            bool classified = similarity >= minimumSimilarity;
 
+            // A melhor categoria fica registrada mesmo em review, preservando
+            // a sugestão para a tela. Só associa pasta de destino ao classificado.
             document.IdHashDefault = best.Id;
             document.SimilarityScore = similarity;
-            document.ClassificationStatus = approved ? "classified" : "review";
-            document.DestinationFolder = approved ? best.DestinationFolder : null;
-            document.ClassifiedAt = now;
+            document.ClassificationStatus = classified ? "classified" : "review";
+            document.DestinationFolder = classified ? best.DestinationFolder : null;
+            document.ClassifiedAt = DateTimeOffset.UtcNow;
+            processed++;
         }
 
         await db.SaveChangesAsync(cancellationToken);
-        return documents.Count;
+        return processed;
     }
 
     private static string BuildStoredDescription(
@@ -309,65 +300,48 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
         string keywords)
     {
         string result =
-            $"{NamePrefix} {categoryName.Trim()}\n\n" +
-            $"{DescriptionPrefix}\n{semanticDescription.Trim()}";
+            $"Categoria: {categoryName.Trim()}\n\n" +
+            $"Descrição semântica:\n{semanticDescription.Trim()}";
 
         if (!string.IsNullOrWhiteSpace(keywords))
-            result += $"\n\n{KeywordsPrefix}\n{keywords.Trim()}";
+            result += $"\n\nTermos e elementos associados:\n{keywords.Trim()}";
 
         return result;
     }
 
-    private static string NormalizeMultilineText(string value)
-    {
-        return string.Join(
-            '\n',
-            value.Replace("\r\n", "\n", StringComparison.Ordinal)
-                .Replace('\r', '\n')
-                .Split('\n')
-                .Select(line => string.Join(' ', line.Split(
-                    (char[]?)null,
-                    StringSplitOptions.RemoveEmptyEntries)))
-                .Where(line => line.Length > 0));
-    }
-
-    private static string NormalizeKeywordText(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return string.Empty;
-
-        return string.Join(
-            "; ",
-            value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Where(term => term.Length > 0)
-                .Distinct(StringComparer.OrdinalIgnoreCase));
-    }
-
     private static (string Name, string Description, string Keywords) ParseStoredDescription(string stored)
     {
-        if (stored.StartsWith(NamePrefix, StringComparison.OrdinalIgnoreCase))
+        const string namePrefix = "Categoria:";
+        const string descriptionPrefix = "Descrição semântica:";
+
+        if (stored.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase))
         {
             string[] parts = stored.Split(
-                new[] { DescriptionPrefix },
+                new[] { descriptionPrefix },
                 2,
                 StringSplitOptions.None);
 
-            string name = parts[0][NamePrefix.Length..].Trim();
+            string name = parts[0][namePrefix.Length..].Trim();
             string description = parts.Length > 1
                 ? parts[1].Split(
-                    new[] { $"\n\n{KeywordsPrefix}" },
+                    new[] { "\n\nTermos e elementos associados:" },
                     2,
                     StringSplitOptions.None)[0].Trim()
                 : stored;
 
             string keywords = string.Empty;
-            int keywordsIndex = stored.IndexOf(KeywordsPrefix, StringComparison.OrdinalIgnoreCase);
+            int keywordsIndex = stored.IndexOf(
+                "Termos e elementos associados:",
+                StringComparison.OrdinalIgnoreCase);
             if (keywordsIndex >= 0)
-                keywords = stored[(keywordsIndex + KeywordsPrefix.Length)..].Trim();
+            {
+                keywords = stored[(keywordsIndex + "Termos e elementos associados:".Length)..].Trim();
+            }
 
             return (name, description, keywords);
         }
 
+        // Compatibilidade com categorias cadastradas antes desta tela.
         string firstLine = stored.Split('\n', 2)[0].Trim();
         string fallbackName = firstLine.Length > 90
             ? firstLine[..87] + "..."
@@ -385,16 +359,6 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
         }
 
         if (embedding.Any(value => !float.IsFinite(value)))
-            throw new InvalidOperationException("O serviço de embeddings retornou valores não finitos.");
-    }
-
-    private static void ValidateSimilarity(double value, string parameterName)
-    {
-        if (double.IsNaN(value) || double.IsInfinity(value) || value < 0 || value > 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                parameterName,
-                "A similaridade mínima deve estar entre 0 e 1.");
-        }
+            throw new InvalidOperationException("O embedding contém valores inválidos.");
     }
 }

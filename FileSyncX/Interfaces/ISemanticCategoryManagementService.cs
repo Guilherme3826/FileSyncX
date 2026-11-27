@@ -20,17 +20,17 @@ public interface ISemanticCategoryManagementService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Reavalia todos os documentos que possuem embedding persistido,
-    /// inclusive os já classificados e os que estão em revisão.
+    /// Reavalia documentos que possuem embedding, mas não estão associados
+    /// a uma categoria. Não gera OCR nem novos embeddings dos documentos.
     /// </summary>
-    Task<int> ReclassifyAllAsync(
+    Task<int> ReclassifyWithoutCategoryAsync(
         double minimumSimilarity = 0.75,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Associa um documento a uma categoria escolhida pelo fluxo automático.
-    /// Atualiza também a pasta de destino da categoria e persiste a similaridade
-    /// real entre os embeddings do documento e da categoria.
+    /// Associa um documento já indexado à categoria escolhida pelo fluxo
+    /// automático, atualizando os destinos e calculando a similaridade real
+    /// entre os embeddings persistidos, sem gerar novos embeddings.
     /// </summary>
     Task<HashDefaultSimilarityResult> AssociateDocumentToCategoryAsync(
         long documentId,

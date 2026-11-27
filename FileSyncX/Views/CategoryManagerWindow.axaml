@@ -58,10 +58,10 @@
                             Padding="10,8"
                             Background="{DynamicResource AppPrimary}"
                             Foreground="{DynamicResource AppWhite}"
-                            ToolTip.Tip="Recompara todos os documentos com embedding armazenado usando os embeddings atuais das categorias. Não executa OCR nem gera novamente os embeddings dos documentos.">
+                            ToolTip.Tip="Compara os embeddings dos documentos sem categoria com as categorias cadastradas. Não executa OCR nem gera novos embeddings.">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="7">
                             <materialIcons:MaterialIcon Kind="Brain" Width="17" Height="17" Foreground="{DynamicResource AppWhite}" />
-                            <TextBlock Text="Reclassificar todos os documentos" FontWeight="SemiBold" />
+                            <TextBlock Text="Reclassificar documentos sem categoria" FontWeight="SemiBold" />
                         </StackPanel>
                     </Button>
                     <DataGrid Grid.Row="3"

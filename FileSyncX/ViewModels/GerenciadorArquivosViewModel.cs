@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UglyToad.PdfPig;
 using FileSyncX.Funcoes.GerenciadorArquivos;
+using FileSyncX.Interfaces;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -18,6 +19,15 @@ namespace FileSyncX.ViewModels;
 
 public partial class GerenciadorArquivosViewModel : ViewModelBase
 {
+    private readonly ICategoryFolderConsolidationService? _categoryFolderConsolidationService;
+
+    /// <summary>
+    /// Serviço usado pelo code-behind da tela para abrir a prévia de consolidação.
+    /// É fornecido pelo contêiner de DI quando a ViewModel é resolvida em runtime.
+    /// </summary>
+    public ICategoryFolderConsolidationService? CategoryFolderConsolidationService
+        => _categoryFolderConsolidationService;
+
     [ObservableProperty]
     private string _termoPesquisa = string.Empty;
 
@@ -114,9 +124,17 @@ public partial class GerenciadorArquivosViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isBusy;
 
-    // Construtor
+    // Mantido para compatibilidade com criação manual/design-time.
     public GerenciadorArquivosViewModel()
+        : this(null)
     {
+    }
+
+    // Em runtime, o contêiner de DI injeta o serviço de consolidação.
+    public GerenciadorArquivosViewModel(
+        ICategoryFolderConsolidationService? categoryFolderConsolidationService)
+    {
+        _categoryFolderConsolidationService = categoryFolderConsolidationService;
         _ = CarregarUltimaPastaAsync();
     }
 

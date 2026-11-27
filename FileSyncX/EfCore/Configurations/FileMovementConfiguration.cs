@@ -71,11 +71,7 @@ public sealed class FileMovementConfiguration
             .HasColumnName("id_hash_default")
             .IsRequired(false);
 
-        builder.HasOne(x => x.HashDefault)
-            .WithMany(x => x.FileMovements)
-            .HasForeignKey(x => x.IdHashDefault)
-            .HasConstraintName("fk_tbl_file_movement_hash_default")
-            .OnDelete(DeleteBehavior.SetNull);
+
 
         // =====================================================
         // INDEXES

@@ -1,0 +1,87 @@
+<Window
+    x:Class="FileSyncX.Views.SimilarCategoryConsolidationWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:results="using:FileSyncX.Repositories.Results"
+    Title="Consolidar pastas de categorias semelhantes"
+    Width="1180"
+    Height="720"
+    MinWidth="900"
+    MinHeight="560"
+    WindowStartupLocation="CenterOwner"
+    Background="{DynamicResource AppToolbarBg}">
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="18">
+        <Border Grid.Row="0"
+                Padding="16"
+                CornerRadius="8"
+                Background="{DynamicResource AppSurface}"
+                BorderBrush="{DynamicResource AppBorder}"
+                BorderThickness="1">
+            <StackPanel Spacing="7">
+                <TextBlock Text="Consolidação de pastas semelhantes"
+                           FontSize="19"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource AppTextPrimary}" />
+                <TextBlock Text="A lista abaixo usa a consulta de similaridade cosseno do VecktorVault: mínimo de 80%, até 200 pares e somente pastas diferentes após normalização de maiúsculas/minúsculas, barras e separadores finais."
+                           TextWrapping="Wrap"
+                           FontSize="12"
+                           Foreground="{DynamicResource AppTextSecondary}" />
+                <TextBlock Text="A consolidação mantém as categorias secundárias e seus IDs. Os documentos continuam vinculados à categoria original; somente os destinos são redirecionados. Os arquivos físicos são movidos para a pasta principal, sem sobrescrever nomes existentes."
+                           TextWrapping="Wrap"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource AppTextPrimary}" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1" RowDefinitions="Auto,*" Margin="0,12,0,12">
+            <TextBlock x:Name="StatusText"
+                       Grid.Row="0"
+                       Margin="2,0,2,8"
+                       Text="Carregando pares candidatos..."
+                       Foreground="{DynamicResource AppTextSecondary}"
+                       TextWrapping="Wrap" />
+
+            <DataGrid x:Name="CandidatesGrid"
+                      Grid.Row="1"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserSortColumns="True"
+                      CanUserResizeColumns="True"
+                      GridLinesVisibility="Horizontal"
+                      Background="{DynamicResource AppSurface}"
+                      BorderBrush="{DynamicResource AppBorder}"
+                      BorderThickness="1">
+                <DataGrid.Columns>
+                    <DataGridTextColumn x:DataType="results:CategoryFolderMergeCandidate" Header="SIMILARIDADE" Binding="{Binding SimilaridadeFormatada}" Width="105" />
+                    <DataGridTextColumn x:DataType="results:CategoryFolderMergeCandidate" Header="CATEGORIA PRINCIPAL" Binding="{Binding PrincipalSugerida}" Width="*" />
+                    <DataGridTextColumn x:DataType="results:CategoryFolderMergeCandidate" Header="DOCS." Binding="{Binding DocumentosDaPrincipal}" Width="65" />
+                    <DataGridTextColumn x:DataType="results:CategoryFolderMergeCandidate" Header="CATEGORIA SECUNDÁRIA" Binding="{Binding SecundariaSugerida}" Width="*" />
+                    <DataGridTextColumn x:DataType="results:CategoryFolderMergeCandidate" Header="DOCS." Binding="{Binding DocumentosDaSecundaria}" Width="65" />
+                    <DataGridTextColumn x:DataType="results:CategoryFolderMergeCandidate" Header="PASTA PRINCIPAL" Binding="{Binding PastaPrincipalSugerida}" Width="2*" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+            <TextBlock x:Name="DetailsText"
+                       Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Text="Nenhuma operação executada."
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource AppTextSecondary}" />
+            <Button x:Name="RefreshButton"
+                    Grid.Column="1"
+                    Content="Atualizar análise"
+                    Padding="14,9" />
+            <Button x:Name="ConsolidateButton"
+                    Grid.Column="2"
+                    Content="Consolidar pares listados"
+                    Padding="16,9"
+                    Background="{DynamicResource AppPrimary}"
+                    Foreground="{DynamicResource AppWhite}"
+                    IsEnabled="False" />
+        </Grid>
+    </Grid>
+</Window>

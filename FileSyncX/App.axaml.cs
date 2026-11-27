@@ -31,42 +31,36 @@ public partial class App : Application
         var services = new ServiceCollection();
         var assembly = Assembly.GetExecutingAssembly();
 
-        // =============================================================
-        // INFRAESTRUTURA DO VECKTORVAULT E SERVIÇOS SEMÂNTICOS
-        // TryAdd preserva registros equivalentes que já existam no projeto.
-        // =============================================================
-
+        // Fábrica única do VecktorVault para runtime e design time.
         services.TryAddSingleton<VecktorVaultDbContextFactory>();
         services.TryAddSingleton<IDbContextFactory<VecktorVaultDbContext>>(
             provider => provider.GetRequiredService<VecktorVaultDbContextFactory>());
 
-        // Serviços-base já utilizados pelo processamento semântico de PDFs.
+        // Serviços da IA Semântica PDF.
         services.TryAddSingleton<IEmbeddingService, OpenAiEmbeddingService>();
         services.TryAddSingleton<IPdfTextExtractionService, PdfTextExtractionService>();
         services.TryAddSingleton<IVecktorVaultService, VecktorVaultService>();
         services.TryAddSingleton<IPdfSemanticProcessingService, PdfSemanticProcessingService>();
         services.TryAddSingleton<IPdfBatchProcessingService, PdfBatchProcessingService>();
 
-        // Serviços exclusivos do Gerenciador de Categorias IA.
+        // Serviços do gerenciamento de Categorias IA.
         services.TryAddSingleton<IAiCategoryDescriptionService, OpenAiCategoryDescriptionService>();
         services.TryAddSingleton<ISemanticCategoryManagementService, SemanticCategoryManagementService>();
 
-        // =============================================================
-        // REGISTRO AUTOMÁTICO DE VIEWMODELS E VIEWS
-        // =============================================================
+        // Serviço da consolidação física de pastas.
+        services.TryAddSingleton<ICategoryFolderConsolidationService, CategoryFolderConsolidationService>();
 
+        // ViewModels.
         var viewModels = assembly.GetTypes()
             .Where(type => type.IsClass && !type.IsAbstract &&
                            type.Name.EndsWith("ViewModel", StringComparison.Ordinal));
-
         foreach (Type viewModelType in viewModels)
             services.AddSingleton(viewModelType);
 
+        // Windows e UserControls.
         var views = assembly.GetTypes()
             .Where(type => type.IsClass && !type.IsAbstract &&
-                           (type.IsSubclassOf(typeof(Window)) ||
-                            type.IsSubclassOf(typeof(UserControl))));
-
+                           (type.IsSubclassOf(typeof(Window)) || type.IsSubclassOf(typeof(UserControl))));
         foreach (Type viewType in views)
             services.AddTransient(viewType);
 

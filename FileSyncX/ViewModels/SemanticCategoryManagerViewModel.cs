@@ -440,15 +440,15 @@ public sealed class SemanticCategoryManagerViewModel : ViewModelBase
         {
             IsBusy = true;
             MensagemErro = string.Empty;
-            MensagemStatus = "Reavaliando todos os documentos com embeddings já armazenados...";
+            MensagemStatus = "Comparando os embeddings existentes com as categorias cadastradas...";
 
-            int total = await _categoryService.ReclassifyAllAsync(
+            int total = await _categoryService.ReclassifyWithoutCategoryAsync(
                 minimumSimilarity: 0.75);
 
             await CarregarCategoriasInternoAsync();
             MensagemStatus = total == 0
-                ? "Nenhum documento com embedding foi encontrado para reclassificação."
-                : $"Reclassificação concluída: {total} documento(s) reavaliado(s) com os embeddings existentes. OCR e embeddings dos documentos não foram regenerados.";
+                ? "Não foram encontrados documentos com embedding e sem categoria associada."
+                : $"Reavaliação concluída: {total} documento(s) comparado(s), sem gerar novos embeddings.";
         }
         catch (Exception ex)
         {
@@ -470,8 +470,6 @@ public sealed class SemanticCategoryManagerViewModel : ViewModelBase
             Categorias.Add(item);
 
         AplicarFiltro();
-        OnPropertyChanged(nameof(PodeReclassificarDocumentos));
-        ReclassificarDocumentosCommand.NotifyCanExecuteChanged();
     }
 
     private void CarregarCategoriaNoFormulario(SemanticCategoryListItem value)

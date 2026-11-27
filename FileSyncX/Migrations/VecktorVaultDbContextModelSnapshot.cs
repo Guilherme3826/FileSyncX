@@ -149,6 +149,77 @@ namespace FileSyncX.Migrations
                     b.ToTable("tbl_default_folders_classification", "public");
                 });
 
+            modelBuilder.Entity("FileSyncX.EfCore.Models.FileMovement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("DestinationPath")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("destination_path");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("file_name");
+
+                    b.Property<int?>("HashDefaultId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("IdHashDefault")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_hash_default");
+
+                    b.Property<DateTimeOffset>("MovedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("moved_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("SourcePath")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_path");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tbl_file_movement");
+
+                    b.HasIndex("HashDefaultId");
+
+                    b.HasIndex("IdHashDefault")
+                        .HasDatabaseName("ix_tbl_file_movement_id_hash_default");
+
+                    b.HasIndex("MovedAt")
+                        .HasDatabaseName("ix_tbl_file_movement_moved_at");
+
+                    b.ToTable("tbl_file_movement", "public");
+                });
+
+            modelBuilder.Entity("FileSyncX.EfCore.Models.FisicalFolders", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("PK_tbl_fisical_folders");
+
+                    b.ToTable("tbl_fisical_folders", "public");
+                });
+
             modelBuilder.Entity("FileSyncX.EfCore.Models.HashDefault", b =>
                 {
                     b.Property<int>("Id")
@@ -205,6 +276,15 @@ namespace FileSyncX.Migrations
                         .HasForeignKey("IdHashDefault")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_archive_hash_default");
+
+                    b.Navigation("HashDefault");
+                });
+
+            modelBuilder.Entity("FileSyncX.EfCore.Models.FileMovement", b =>
+                {
+                    b.HasOne("FileSyncX.EfCore.Models.HashDefault", "HashDefault")
+                        .WithMany()
+                        .HasForeignKey("HashDefaultId");
 
                     b.Navigation("HashDefault");
                 });

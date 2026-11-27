@@ -115,6 +115,40 @@ namespace FileSyncX.Migrations
                         });
                 });
 
+            modelBuilder.Entity("FileSyncX.EfCore.Models.DefaultFoldersClassification", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset?>("ClassifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("classified_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("FolderName")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("folder_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tbl_default_folders_classification");
+
+                    b.HasIndex("FolderName")
+                        .IsUnique()
+                        .HasDatabaseName("uq_tbl_default_folders_classification_folder_name");
+
+                    b.ToTable("tbl_default_folders_classification", "public");
+                });
+
             modelBuilder.Entity("FileSyncX.EfCore.Models.HashDefault", b =>
                 {
                     b.Property<int>("Id")
@@ -129,6 +163,9 @@ namespace FileSyncX.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<long?>("DefaultFolderClassificationId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -145,6 +182,9 @@ namespace FileSyncX.Migrations
                         .HasColumnType("vector(1536)")
                         .HasColumnName("embedding");
 
+                    b.Property<long?>("IdDefaultFolderClassification")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
@@ -152,6 +192,8 @@ namespace FileSyncX.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_tbl_hash_default");
+
+                    b.HasIndex("DefaultFolderClassificationId");
 
                     b.ToTable("tbl_hash_default", "public");
                 });
@@ -165,6 +207,20 @@ namespace FileSyncX.Migrations
                         .HasConstraintName("fk_archive_hash_default");
 
                     b.Navigation("HashDefault");
+                });
+
+            modelBuilder.Entity("FileSyncX.EfCore.Models.HashDefault", b =>
+                {
+                    b.HasOne("FileSyncX.EfCore.Models.DefaultFoldersClassification", "DefaultFolderClassification")
+                        .WithMany("HashDefaults")
+                        .HasForeignKey("DefaultFolderClassificationId");
+
+                    b.Navigation("DefaultFolderClassification");
+                });
+
+            modelBuilder.Entity("FileSyncX.EfCore.Models.DefaultFoldersClassification", b =>
+                {
+                    b.Navigation("HashDefaults");
                 });
 
             modelBuilder.Entity("FileSyncX.EfCore.Models.HashDefault", b =>

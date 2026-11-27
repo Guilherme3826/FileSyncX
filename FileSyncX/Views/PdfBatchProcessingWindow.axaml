@@ -47,7 +47,7 @@
                         </Grid>
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="18" Margin="0,6,0,0">
                             <CheckBox Grid.Column="0" Content="Incluir subpastas" IsChecked="{Binding IncluirSubpastas, Mode=TwoWay}" />
-                            <CheckBox Grid.Column="1" Content="Mover PDFs classificados" IsChecked="{Binding MoverSeClassificado, Mode=TwoWay}" />
+                            <CheckBox Grid.Column="1" Content="Organizar automaticamente" IsChecked="{Binding MoverSeClassificado, Mode=TwoWay}" />
                             <StackPanel Grid.Column="2" Spacing="4">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="Similaridade mínima" FontWeight="SemiBold" Foreground="{DynamicResource AppTextPrimary}" />
@@ -57,7 +57,7 @@
                                         Value="{Binding SimilaridadeMinima, Mode=TwoWay}" />
                             </StackPanel>
                         </Grid>
-                        <TextBlock Text="A movimentação é opcional e permanece desativada por padrão. Documentos abaixo do limite de similaridade ficam para revisão." FontSize="11" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap" />
+                        <TextBlock Text="A organização automática está ativada por padrão. Se nenhuma categoria atingir a similaridade mínima, uma nova categoria será criada com IA. O PDF será movido para a pasta correspondente." FontSize="11" Foreground="{DynamicResource AppTextSecondary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 

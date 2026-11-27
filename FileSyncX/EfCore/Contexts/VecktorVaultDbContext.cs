@@ -23,6 +23,8 @@ public sealed class VecktorVaultDbContext
     public DbSet<ArchiveHashCategorization> ArchiveHashCategorizations
         => Set<ArchiveHashCategorization>();
 
+    public DbSet<DefaultFoldersClassification> DefaultFoldersClassifications;
+
     // =========================================================
     // MODEL CONFIGURATION
     // =========================================================

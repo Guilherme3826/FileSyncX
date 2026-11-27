@@ -1,34 +1,29 @@
-
 using Pgvector;
 
 namespace FileSyncX.EfCore.Models;
 
 public class HashDefault
 {
-    // Identificador da categoria
     public int Id { get; set; }
 
     public string Name { get; set; } = string.Empty;
 
-    // Descrição da categoria
     public string Description { get; set; } = string.Empty;
 
-    // Pasta de destino
     public string DestinationFolder { get; set; } = string.Empty;
 
-    // Embedding de referência (1536 dimensões)
     public Vector Embedding { get; set; } = null!;
 
-    // Data de criação
     public DateTimeOffset CreatedAt { get; set; }
 
-    // =========================================================
-    // RELACIONAMENTO
-    // =========================================================
+    // FK para DefaultFoldersClassification
+    public long? IdDefaultFolderClassification { get; set; }
 
-    public ICollection<ArchiveHashCategorization> Documents
-    {
-        get;
-        set;
-    } = new List<ArchiveHashCategorization>();
+    // Navegação para a pasta de classificação
+    public DefaultFoldersClassification? DefaultFolderClassification { get; set; }
+
+    // Documentos associados à categoria
+    public ICollection<ArchiveHashCategorization> Documents { get; set; }
+        = new List<ArchiveHashCategorization>();
 }
+

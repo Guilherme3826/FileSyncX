@@ -24,7 +24,7 @@ public partial class PdfBatchProcessingViewModel : ViewModelBase
     private bool _incluirSubpastas = true;
 
     [ObservableProperty]
-    private bool _moverSeClassificado;
+    private bool _moverSeClassificado = true;
 
     [ObservableProperty]
     private double _similaridadeMinima = 0.75;

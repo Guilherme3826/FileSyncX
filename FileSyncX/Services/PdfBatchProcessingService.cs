@@ -27,7 +27,7 @@ public sealed class PdfBatchProcessingService : IPdfBatchProcessingService
         string caminhoPasta,
         bool incluirSubpastas = true,
         double similaridadeMinima = 0.75,
-        bool moverSeClassificado = false,
+        bool moverSeClassificado = true,
         IProgress<PdfBatchProgress>? progresso = null,
         CancellationToken cancellationToken = default)
     {

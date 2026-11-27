@@ -9,8 +9,9 @@ using Pgvector.EntityFrameworkCore;
 namespace FileSyncX.Services;
 
 /// <summary>
-/// Gerencia as categorias semânticas armazenadas em public.tbl_hash_default.
-/// O embedding da categoria é regenerado sempre que ela é criada ou alterada.
+/// Gerencia categorias semânticas em public.tbl_hash_default.
+/// Os embeddings de categorias são gerados a partir do texto canônico:
+/// nome + descrição semântica + palavras-chave.
 /// </summary>
 public sealed class SemanticCategoryManagementService : ISemanticCategoryManagementService
 {
@@ -86,8 +87,6 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
         string normalizedKeywords = NormalizeKeywordText(keywords);
         string folder = Path.GetFullPath(destinationFolder.Trim());
 
-        // Este é o texto canônico: exatamente o mesmo conteúdo é salvo no banco
-        // e enviado ao modelo de embeddings.
         string storedDescription = BuildStoredDescription(
             normalizedName,
             normalizedDescription,
@@ -95,18 +94,23 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
 
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
-        bool duplicate = await db.HashDefaults
+        int? duplicateId = await db.HashDefaults
             .AsNoTracking()
-            .AnyAsync(x =>
-                x.Id != (categoryId ?? 0) &&
-                x.Description == storedDescription &&
-                x.DestinationFolder == folder,
-                cancellationToken);
+            .Where(x => x.Id != (categoryId ?? 0) &&
+                        x.Description == storedDescription &&
+                        x.DestinationFolder == folder)
+            .Select(x => (int?)x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (duplicate)
+        // A criação automática é idempotente para um texto e pasta exatamente iguais.
+        // Isso evita duplicar a mesma categoria em reprocessamentos do mesmo documento.
+        if (!categoryId.HasValue && duplicateId.HasValue)
+            return duplicateId.Value;
+
+        if (categoryId.HasValue && duplicateId.HasValue)
         {
             throw new InvalidOperationException(
-                "Já existe uma categoria com a mesma descrição e pasta de destino.");
+                "Já existe outra categoria com a mesma descrição e pasta de destino.");
         }
 
         float[] embeddingValues = await _embeddingService.GenerateEmbeddingAsync(
@@ -147,6 +151,66 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
         return categoryId.Value;
     }
 
+    public async Task<HashDefaultSimilarityResult> AssociateDocumentToCategoryAsync(
+        long documentId,
+        int categoryId,
+        string destinationFolder,
+        string? destinationFile,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(destinationFolder))
+            throw new ArgumentException("A pasta de destino é obrigatória.", nameof(destinationFolder));
+
+        string folder = Path.GetFullPath(destinationFolder.Trim());
+        string? normalizedDestinationFile = string.IsNullOrWhiteSpace(destinationFile)
+            ? null
+            : Path.GetFullPath(destinationFile.Trim());
+
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+
+        HashDefault? category = await db.HashDefaults
+            .FirstOrDefaultAsync(x => x.Id == categoryId, cancellationToken);
+
+        if (category is null)
+            throw new KeyNotFoundException($"Categoria {categoryId} não encontrada.");
+
+        ArchiveHashCategorization? document = await db.ArchiveHashCategorizations
+            .FirstOrDefaultAsync(x => x.Id == documentId, cancellationToken);
+
+        if (document is null)
+            throw new KeyNotFoundException($"Documento {documentId} não encontrado.");
+
+        if (document.Embedding is null)
+            throw new InvalidOperationException("O documento não possui embedding persistido.");
+
+        // Obtém a distância real no PostgreSQL/pgvector, sem regenerar embeddings.
+        double distance = await db.ArchiveHashCategorizations
+            .AsNoTracking()
+            .Where(x => x.Id == documentId)
+            .Select(x => x.Embedding!.CosineDistance(category.Embedding))
+            .SingleAsync(cancellationToken);
+
+        double similarity = Math.Clamp(1d - distance, -1d, 1d);
+
+        category.DestinationFolder = folder;
+
+        document.IdHashDefault = category.Id;
+        document.SimilarityScore = similarity;
+        document.ClassificationStatus = "classified";
+        document.DestinationFolder = folder;
+        document.DestinationFile = normalizedDestinationFile;
+        document.ClassifiedAt = DateTimeOffset.UtcNow;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new HashDefaultSimilarityResult(
+            category.Id,
+            category.Description,
+            category.DestinationFolder,
+            distance,
+            similarity);
+    }
+
     public async Task DeleteAsync(
         int categoryId,
         CancellationToken cancellationToken = default)
@@ -159,7 +223,6 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
         if (category is null)
             return;
 
-        // Preserva os documentos: remove apenas a associação com a categoria.
         await db.ArchiveHashCategorizations
             .Where(x => x.IdHashDefault == categoryId)
             .ExecuteUpdateAsync(
@@ -170,29 +233,14 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>
-    /// Reclassifica TODOS os documentos com embedding, mesmo aqueles que já
-    /// possuem id_hash_default. Isso é necessário após editar uma categoria,
-    /// pois o embedding dela é atualizado e as pontuações antigas ficam obsoletas.
-    /// </summary>
     public async Task<int> ReclassifyAllAsync(
         double minimumSimilarity = 0.75,
         CancellationToken cancellationToken = default)
     {
-        if (double.IsNaN(minimumSimilarity) ||
-            double.IsInfinity(minimumSimilarity) ||
-            minimumSimilarity < 0 || minimumSimilarity > 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(minimumSimilarity),
-                "A similaridade mínima deve estar entre 0 e 1.");
-        }
+        ValidateSimilarity(minimumSimilarity, nameof(minimumSimilarity));
 
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
 
-        // Importante: não filtrar por IdHashDefault == null.
-        // Documentos em review também recebem a categoria candidata e, por isso,
-        // eram ignorados pela implementação anterior.
         var documents = await db.ArchiveHashCategorizations
             .Where(x => x.Embedding != null)
             .OrderBy(x => x.Id)
@@ -214,6 +262,7 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
                 document.SimilarityScore = null;
                 document.ClassificationStatus = "unclassified";
                 document.DestinationFolder = null;
+                document.DestinationFile = null;
                 document.ClassifiedAt = now;
                 continue;
             }
@@ -243,8 +292,6 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
             double similarity = Math.Clamp(1d - best.Distance, -1d, 1d);
             bool approved = similarity >= minimumSimilarity;
 
-            // Mantém a melhor categoria como sugestão, inclusive em review.
-            // A pasta só é preenchida quando o limite é atingido.
             document.IdHashDefault = best.Id;
             document.SimilarityScore = similarity;
             document.ClassificationStatus = approved ? "classified" : "review";
@@ -314,17 +361,13 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
                 : stored;
 
             string keywords = string.Empty;
-            int keywordsIndex = stored.IndexOf(
-                KeywordsPrefix,
-                StringComparison.OrdinalIgnoreCase);
-
+            int keywordsIndex = stored.IndexOf(KeywordsPrefix, StringComparison.OrdinalIgnoreCase);
             if (keywordsIndex >= 0)
                 keywords = stored[(keywordsIndex + KeywordsPrefix.Length)..].Trim();
 
             return (name, description, keywords);
         }
 
-        // Compatibilidade com categorias criadas antes do gerenciador semântico.
         string firstLine = stored.Split('\n', 2)[0].Trim();
         string fallbackName = firstLine.Length > 90
             ? firstLine[..87] + "..."
@@ -343,5 +386,15 @@ public sealed class SemanticCategoryManagementService : ISemanticCategoryManagem
 
         if (embedding.Any(value => !float.IsFinite(value)))
             throw new InvalidOperationException("O serviço de embeddings retornou valores não finitos.");
+    }
+
+    private static void ValidateSimilarity(double value, string parameterName)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value) || value < 0 || value > 1)
+        {
+            throw new ArgumentOutOfRangeException(
+                parameterName,
+                "A similaridade mínima deve estar entre 0 e 1.");
+        }
     }
 }
